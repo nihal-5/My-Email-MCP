@@ -1,0 +1,182 @@
+name: Deploy to Oracle Cloud
+
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'screenshots/**'
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+env:
+  DOCKER_COMPOSE_FILE: docker-compose.prod.yml
+
+jobs:
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run tests (if available)
+      run: npm test || echo "No tests configured"
+      continue-on-error: true
+
+  deploy:
+    name: 🚀 Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Create .env file
+      run: |
+        cat > .env << EOF
+        NODE_ENV=production
+        MCP_PORT=3000
+        APPROVAL_PORT=3001
+        SESSION_STORAGE_PATH=./data
+        AUTO_LOGIN=true
+        LOG_LEVEL=info
+        
+        # Secrets from GitHub Secrets
+        MY_WHATSAPP_NUMBER=${{ secrets.MY_WHATSAPP_NUMBER }}
+        
+        SMTP_HOST=${{ secrets.SMTP_HOST }}
+        SMTP_PORT=${{ secrets.SMTP_PORT }}
+        SMTP_USER=${{ secrets.SMTP_USER }}
+        SMTP_PASS=${{ secrets.SMTP_PASS }}
+        FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+        TO_EMAIL=${{ secrets.TO_EMAIL }}
+        CC_EMAIL=${{ secrets.CC_EMAIL }}
+        
+        ORCHESTRATOR_PATH=./orchestrator/main.py
+        MCP_BASE=http://localhost:3000
+        
+        HUGGINGFACE_API_KEY=${{ secrets.HUGGINGFACE_API_KEY }}
+        GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+        OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        
+        SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+        EOF
+    
+    - name: Deploy to Oracle Cloud
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.ORACLE_HOST }}
+        username: ${{ secrets.ORACLE_USERNAME }}
+        key: ${{ secrets.ORACLE_SSH_KEY }}
+        port: ${{ secrets.ORACLE_PORT || 22 }}
+        script: |
+          # Navigate to project directory
+          cd ~/agentkit || { echo "Project directory not found!"; exit 1; }
+          
+          echo "📥 Pulling latest changes..."
+          git pull origin main || git pull origin master
+          
+          echo "🛑 Stopping existing containers..."
+          docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} down || true
+          
+          echo "🏗️ Building Docker image..."
+          docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} build --no-cache
+          
+          echo "🚀 Starting services..."
+          docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} up -d
+          
+          echo "⏳ Waiting for services to initialize..."
+          sleep 15
+          
+          echo "📊 Container status:"
+          docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} ps
+          
+          echo "📝 Recent logs:"
+          docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} logs --tail=30
+          
+          echo "✅ Deployment complete!"
+          echo "🌐 Dashboard: http://${{ secrets.ORACLE_HOST }}:3001/approval"
+          echo "🔧 MCP Server: http://${{ secrets.ORACLE_HOST }}:3000"
+    
+    - name: Create .env on server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.ORACLE_HOST }}
+        username: ${{ secrets.ORACLE_USERNAME }}
+        key: ${{ secrets.ORACLE_SSH_KEY }}
+        port: ${{ secrets.ORACLE_PORT || 22 }}
+        script: |
+          cd ~/agentkit
+          cat > .env << 'EOF'
+          NODE_ENV=production
+          MCP_PORT=3000
+          APPROVAL_PORT=3001
+          SESSION_STORAGE_PATH=./data
+          AUTO_LOGIN=true
+          LOG_LEVEL=info
+          
+          MY_WHATSAPP_NUMBER=${{ secrets.MY_WHATSAPP_NUMBER }}
+          
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+          TO_EMAIL=${{ secrets.TO_EMAIL }}
+          CC_EMAIL=${{ secrets.CC_EMAIL }}
+          
+          ORCHESTRATOR_PATH=./orchestrator/main.py
+          MCP_BASE=http://localhost:3000
+          
+          HUGGINGFACE_API_KEY=${{ secrets.HUGGINGFACE_API_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          EOF
+          echo "✅ .env file created on server"
+    
+    - name: Health check
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.ORACLE_HOST }}
+        username: ${{ secrets.ORACLE_USERNAME }}
+        key: ${{ secrets.ORACLE_SSH_KEY }}
+        port: ${{ secrets.ORACLE_PORT || 22 }}
+        script: |
+          echo "🏥 Running health checks..."
+          
+          # Wait a bit more for services to be ready
+          sleep 10
+          
+          # Check if containers are running
+          if docker ps | grep -q whatsapp-resume-automation-prod; then
+            echo "✅ Container is running"
+          else
+            echo "❌ Container is not running!"
+            docker-compose -f docker-compose.prod.yml logs --tail=50
+            exit 1
+          fi
+          
+          # Try to reach the health endpoint
+          if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "✅ Health check passed"
+          else
+            echo "⚠️ Health check failed, but deployment may still succeed"
+          fi
+

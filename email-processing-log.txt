@@ -1,0 +1,107 @@
+🚀 Processing Email #3 (Gen AI Specialist from Shubham Dwivedi)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 Fetching email #3 from inbox...
+
+✅ Connected to Gmail
+
+📬 Total emails: 81642
+
+📧 Fetching sequence #81640...
+
+
+✅ Fetch completed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 EMAIL DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+From: "ATEC Spine via LinkedIn" <newsletters-noreply@linkedin.com>
+Subject: October Society Meeting Highlights
+Date: Fri Nov 07 2025 14:42:29 GMT-0500 (Eastern Standard Time)
+Message ID: <726563062.15951554.1762544549413@lor1-app71458.prod.linkedin.com>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 EMAIL CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ATEC Insider
+
+By ATEC Spine
+
+
+By ATEC Spine
+
+    
+    
+    Read this article on LinkedIn to join the conversation
+Read on LinkedIn
+https://www.linkedin.com/comm/pulse/october-society-meeting-highlights-atec-spine-vcrtc?lipi=urn%3Ali%3Apage%3Aemail_email_series_follow_newsletter_01%3BYE3Rtou9Qk2oA2MrINkfmg%3D%3D&midToken=AQExFvO8k4vk1g&midSig=0mlUuAVzX-fc01&trk=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_&trkEmail=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_-null-dqmsld~mhp9cig2~3e-null-null&eid=dqmsld-mhp9cig2-3e&otpToken=MWEwNjFlZTcxYjJkY2VjZGI3MjQwNGVkNDAxY2UyYjA4YmNiZDQ0OTlhYWI4YzYxNzljNzAyNmM0NzUyNWNmMGYwZDFkZmEzNmJjZmYzZDM1ZmI4Y2U1ZDc1NTFhZGVjNDdiNzUxYTUxNzUzNjU3OTJjZTA1ZCwxLDE%3D
+  
+From international forums to focused symposia, ATEC continued our commitment to surgeon education and procedural innovation this October. We were proud to support a series of events that brought together leading voices in spine surgery to exchange ideas, advance surgical technique, and strengthen our shared mission of improving patient outcomes. Society for Minimally Invasive Spine Surgery (SMISS) October 2–4 | Las Vegas, NV The SMISS Annual Forum brought together spine surgeons and industry professionals for three days of expert-led education, hands-on learning, and technology exploration. With a program dedicated exclusively to minimally invasive spine (MIS) approaches, sessions highlighted the latest advances in surgical workflows and evolving t
+
+...(truncated)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💾 CREATING SESSION FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Session file saved: /Users/nihalveeramalla/projects/agentkit/data/session/email_2025-11-07T20-00-24-573Z.json
+
+📄 Session data:
+   Source: email
+   Recruiter: ATEC Spine via LinkedIn <newsletters-noreply@linkedin.com>
+   Subject: October Society Meeting Highlights
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 CALLING PYTHON ORCHESTRATOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Command: cd /Users/nihalveeramalla/projects/agentkit/orchestrator && python main.py "/Users/nihalveeramalla/projects/agentkit/data/session/email_2025-11-07T20-00-24-573Z.json"
+
+📋 Orchestrator Process Log:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Loaded session file: /Users/nihalveeramalla/projects/agentkit/data/session/email_2025-11-07T20-00-24-573Z.json
+=== Starting Resume Workflow ===
+Step 1: Parsing JD...
+  Role: From international forums to focused symposia, ATEC continued our commitment to surgeon education and procedural innovation this October. We were proud to support a series of events that brought together leading voices in spine surgery to exchange ideas, advance surgical technique, and strengthen our shared mission of improving patient outcomes. Society for Minimally Invasive Spine Surgery (SMISS) October 2–4 | Las Vegas, NV The SMISS Annual Forum brought together spine surgeons and industry professionals for three days of expert-led education, hands-on learning, and technology exploration. With a program dedicated exclusively to minimally invasive spine (MIS) approaches, sessions highlighted the latest advances in surgical workflows and evolving technologies that continue to redefine spine care. ATEC was proud to support SMISS and its mission to advance MIS surgery, standing alongside innovators who are pushing the boundaries of procedural precision and efficiency. Pat Miles awards William Taylor, MD with the Luiz Pimenta, MD, PhD, Lateral Innovation Award Congress of Neurological Surgeons (CNS) October 11–15 | Chicago, IL The CNS Annual Meeting convened neurosurgeons, residents, and allied health professionals for a comprehensive look at the state of neurosurgical innovation. Covering topics from spinal surgery and trauma to technology integration and collaborative care, the meeting served as a platform for education and professional growth. As a corporate supporter, ATEC was honored to engage with the neurosurgical community, furthering our shared commitment to advancing education and excellence in spine and cranial surgery.   Juan Uribe, MD and Jakub Godzik, MD present at a dinner for CNS. University of Miami | Spine Fellows Reunion Conference October 23–26 | Miami, FL The University of Miami’s Spine Fellows Reunion Conference brought together alumni, fellows, and faculty for a weekend of scientific exchange and connection. Through case discussions and interactive panels, participants explored the latest developments in minimally invasive techniques, deformity, and motion preservation surgery—reaffirming a shared dedication to innovation and mentorship. ATEC was proud to support this annual event, celebrating the fellowship community that continues to inspire progress and leadership in spine surgery. Left: Surgeons pose at Miami Spine Fellows Reunion, Right: Timmy Wang, MD presents cases featuring ATEC technology LSRS Hands-On Surgical Techniques Course | Medical Academic Center October 22-24 | Carmel, IN The Lumbar Spine Research Society hosted its 3rd Annual Hands-On Surgical Techniques Course in collaboration with the Medical Academic Center (MAC) and Indiana Spine Group, bringing senior-level orthopedic and neurosurgical trainees together for focused instruction in degenerative lumbar spine surgery. ATEC was proud to support this hands-on educational experience and to champion initiatives that equip young spine surgeons with the foundational skills required to deliver high-quality lumbar spine care. Special thanks to Zachary NaPier, MD, for his leadership and contributions to the program. Zachary Napier, MD leads a lab at LSRS Barrow Neurological Institute | Sonntag Spine Symposium October 24 | Phoenix, AZ The Sonntag Spine Symposium gathered spine surgeons and trainees for a full day of lectures, live demonstrations, and case-based discussions focused on advancing surgical performance and patient outcomes. Topics included MIS techniques, deformity correction, and single-position surgery, alongside the latest enabling technologies driving progress in the OR. ATEC was honored to partner with Barrow in supporting this impactful educational program—reinforcing our commitment to fostering surgeon learning and innovation in every phase of spine care. Pat Miles presents at the Sonntag Spine Symposium Looking Ahead: November and December Society Engagements ATEC is gearing up for an exciting close to the year, with continued participation in key meetings that bring together the spine community. Join us in November and December at upcoming events: ICEOS | Nov 5 – 7 NASS | Nov 14 – 17 Spine IEP Course | Nov 21 – 23 RSNA | Nov 30 – Dec 4 IPOS | Dec 2 – 6 CSRS | Dec 3 – 5 ISDS | Dec 12 – 13 Stay Connected Curious about what’s next? Looking for more details on where to find us? Visit our website for the full list of upcoming events and opportunities to connect: https://atecspine.com/events/
+  Cloud: azure
+  Location: https://www.linkedin.com/comm/pulse/october-society-meeting-highlights-atec-spine-vcrtc?lipi=urn%3Ali%3Apage%3Aemail_email_series_follow_newsletter_01%3BYE3Rtou9Qk2oA2MrINkfmg%3D%3D&midToken=AQExFvO8k4vk1g&midSig=0mlUuAVzX-fc01&trk=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_&trkEmail=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_-null-dqmsld~mhp9cig2~3e-null-null&eid=dqmsld-mhp9cig2-3e&otpToken=MWEwNjFlZTcxYjJkY2VjZGI3MjQwNGVkNDAxY2UyYjA4YmNiZDQ0OTlhYWI4YzYxNzljNzAyNmM0NzUyNWNmMGYwZDFkZmEzNmJjZmYzZDM1ZmI4Y2U1ZDc1NTFhZGVjNDdiNzUxYTUxNzUzNjU3OTJjZTA1ZCwxLDE%3D
+Step 2: Tailoring resume...
+  Generated 10262 chars of LaTeX
+Step 3: Validating resume...
+  Valid: True
+Step 4: Generating AI-powered email...
+  ✅ AI email generated
+  Subject: Application for From international forums to focused symposia, ATEC continue
+Step 5: Submitting for approval...
+  Success: True
+  Submission ID: submission_1762545629649_amr7qojpx
+  Resume submitted for approval. Review at http://localhost:3001/approval
+
+
+✅ Orchestrator Result:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "role": "From international forums to focused symposia, ATEC continued our commitment to surgeon education and procedural innovation this October. We were proud to support a series of events that brought together leading voices in spine surgery to exchange ideas, advance surgical technique, and strengthen our shared mission of improving patient outcomes. Society for Minimally Invasive Spine Surgery (SMISS) October 2\u20134 | Las Vegas, NV The SMISS Annual Forum brought together spine surgeons and industry professionals for three days of expert-led education, hands-on learning, and technology exploration. With a program dedicated exclusively to minimally invasive spine (MIS) approaches, sessions highlighted the latest advances in surgical workflows and evolving technologies that continue to redefine spine care. ATEC was proud to support SMISS and its mission to advance MIS surgery, standing alongside innovators who are pushing the boundaries of procedural precision and efficiency. Pat Miles awards William Taylor, MD with the Luiz Pimenta, MD, PhD, Lateral Innovation Award Congress of Neurological Surgeons (CNS) October 11\u201315 | Chicago, IL The CNS Annual Meeting convened neurosurgeons, residents, and allied health professionals for a comprehensive look at the state of neurosurgical innovation. Covering topics from spinal surgery and trauma to technology integration and collaborative care, the meeting served as a platform for education and professional growth. As a corporate supporter, ATEC was honored to engage with the neurosurgical community, furthering our shared commitment to advancing education and excellence in spine and cranial surgery. \u00a0 Juan Uribe, MD and Jakub Godzik, MD present at a dinner for CNS. University of Miami | Spine Fellows Reunion Conference October 23\u201326 | Miami, FL The University of Miami\u2019s Spine Fellows Reunion Conference brought together alumni, fellows, and faculty for a weekend of scientific exchange and connection. Through case discussions and interactive panels, participants explored the latest developments in minimally invasive techniques, deformity, and motion preservation surgery\u2014reaffirming a shared dedication to innovation and mentorship. ATEC was proud to support this annual event, celebrating the fellowship community that continues to inspire progress and leadership in spine surgery. Left: Surgeons pose at Miami Spine Fellows Reunion, Right: Timmy Wang, MD presents cases featuring ATEC technology LSRS Hands-On Surgical Techniques Course | Medical Academic Center October 22-24 | Carmel, IN The Lumbar Spine Research Society hosted its 3rd Annual Hands-On Surgical Techniques Course in collaboration with the Medical Academic Center (MAC) and Indiana Spine Group, bringing senior-level orthopedic and neurosurgical trainees together for focused instruction in degenerative lumbar spine surgery. ATEC was proud to support this hands-on educational experience and to champion initiatives that equip young spine surgeons with the foundational skills required to deliver high-quality lumbar spine care. Special thanks to Zachary NaPier, MD, for his leadership and contributions to the program. Zachary Napier, MD leads a lab at LSRS Barrow Neurological Institute | Sonntag Spine Symposium October 24 | Phoenix, AZ The Sonntag Spine Symposium gathered spine surgeons and trainees for a full day of lectures, live demonstrations, and case-based discussions focused on advancing surgical performance and patient outcomes. Topics included MIS techniques, deformity correction, and single-position surgery, alongside the latest enabling technologies driving progress in the OR. ATEC was honored to partner with Barrow in supporting this impactful educational program\u2014reinforcing our commitment to fostering surgeon learning and innovation in every phase of spine care. Pat Miles presents at the Sonntag Spine Symposium Looking Ahead: November and December Society Engagements ATEC is gearing up for an exciting close to the year, with continued participation in key meetings that bring together the spine community. Join us in November and December at upcoming events: ICEOS | Nov 5 \u2013 7 NASS | Nov 14 \u2013 17 Spine IEP Course | Nov 21 \u2013 23 RSNA | Nov 30 \u2013 Dec 4 IPOS | Dec 2 \u2013 6 CSRS | Dec 3 \u2013 5 ISDS | Dec 12 \u2013 13 Stay Connected Curious about what\u2019s next? Looking for more details on where to find us? Visit our website for the full list of upcoming events and opportunities to connect: https://atecspine.com/events/",
+  "cloud": "azure",
+  "location": "https://www.linkedin.com/comm/pulse/october-society-meeting-highlights-atec-spine-vcrtc?lipi=urn%3Ali%3Apage%3Aemail_email_series_follow_newsletter_01%3BYE3Rtou9Qk2oA2MrINkfmg%3D%3D&midToken=AQExFvO8k4vk1g&midSig=0mlUuAVzX-fc01&trk=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_&trkEmail=eml-email_series_follow_newsletter_01-null-0-read_more_banner_cta_-null-dqmsld~mhp9cig2~3e-null-null&eid=dqmsld-mhp9cig2-3e&otpToken=MWEwNjFlZTcxYjJkY2VjZGI3MjQwNGVkNDAxY2UyYjA4YmNiZDQ0OTlhYWI4YzYxNzljNzAyNmM0NzUyNWNmMGYwZDFkZmEzNmJjZmYzZDM1ZmI4Y2U1ZDc1NTFhZGVjNDdiNzUxYTUxNzUzNjU3OTJjZTA1ZCwxLDE%3D",
+  "validation": {
+    "ok": true,
+    "errors": []
+  },
+  "email_result": {
+    "success": true,
+    "submissionId": "submission_1762545629649_amr7qojpx",
+    "message": "Resume submitted for approval. Review at http://localhost:3001/approval"
+  }
+}
+
+
+
+✅ Email JD processed successfully!
+
+🔌 IMAP connection closed
+
+✅ Processing completed successfully

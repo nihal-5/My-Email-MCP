@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+
+# Environment variables - NEVER COMMIT!
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Session data (SENSITIVE - contains auth tokens)
+data/
+*.db
+*.db-journal
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Generated files
+outbox/
+*.pdf
+*.tex
+
+# Logs
+*.log
+logs/
+server-output.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# SSH Keys
+*.pem
+*.ppk
+id_rsa*
+
+# Secrets
+secrets/
+*.key
+*.crt
+*.p12

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  whatsapp-resume-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatsapp-resume-automation
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # MCP Server API
+      - "3001:3001"  # Approval Dashboard
+    volumes:
+      # Persist WhatsApp session data (important!)
+      - ./data:/app/data
+      # Persist generated PDFs and resumes
+      - ./outbox:/app/outbox
+      # Read-only access to templates
+      - ./src/resume-tools/templates:/app/src/resume-tools/templates:ro
+    environment:
+      - NODE_ENV=production
+      - TZ=America/New_York
+    env_file:
+      - .env
+    networks:
+      - resume-bot-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  resume-bot-network:
+    driver: bridge
+
+volumes:
+  whatsapp-data:
+    driver: local

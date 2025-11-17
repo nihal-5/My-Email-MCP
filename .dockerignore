@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+npm-debug.log
+
+# Build output
+dist/
+
+# Environment files (will be mounted)
+.env
+.env.local
+.env.*.local
+
+# Session data (will be mounted as volume)
+data/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Generated files
+outbox/
+screenshots/
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+__tests__/
+coverage/

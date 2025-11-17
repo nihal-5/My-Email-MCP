@@ -1,0 +1,27 @@
+# Docker Compose for Mac - Dashboard Only (no WhatsApp in Docker)
+version: '3.8'
+
+services:
+  dashboard-only:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: whatsapp-dashboard-mac
+    ports:
+      - "3001:3001"  # Approval Dashboard
+    volumes:
+      - ./data:/app/data
+      - ./outbox:/app/outbox
+    environment:
+      - NODE_ENV=development
+      - APPROVAL_PORT=3001
+      - LOG_LEVEL=info
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - resume-bot-network
+
+networks:
+  resume-bot-network:
+    driver: bridge
