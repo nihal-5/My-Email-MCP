@@ -13,6 +13,5 @@
 
 ## System Resources
 - **Memory Usage**: <100MB
-- **CPU Usage**: <5% (idle), <30% (processing)
-- **Storage**: ~500MB (models + data)
+- **CPU Usage**: <5% (idle), <30% (processing)\sdv[FSV?<>MDF>NV - **Storage**: ~500MB (models + data)
 
