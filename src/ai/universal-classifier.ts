@@ -1,8 +1,7 @@
 /**
  * 🏷️ UNIVERSAL EMAIL CLASSIFIER
  * 
- * Classifies ALL emails into categories using GROQ API (FREE & FAST!)
- * Using llama-3.3-70b-versatile for better accuracy
+ * Classifies ALL emails into categories using OpenAI GPT-3.5-turbo (Cost-effective!)
  * 
  * Categories:
  * - job_opportunity
@@ -16,7 +15,8 @@
  * - other
  */
 
-import Groq from 'groq-sdk';
+import OpenAI from 'openai';
+import { getAIConfig } from '../utils/config.js';
 
 export interface EmailClassification {
   category: EmailCategory;
@@ -44,16 +44,21 @@ export type EmailCategory =
 export type Priority = 'urgent' | 'high' | 'medium' | 'low';
 
 export class UniversalEmailClassifier {
-  private groq: Groq;
+  private openai: OpenAI;
+  private aiConfig: ReturnType<typeof getAIConfig>;
+  private useAI: boolean = true; // Set to false to use rule-based only
 
   constructor() {
-    this.groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY
+    this.aiConfig = getAIConfig();
+    this.openai = new OpenAI({
+      apiKey: this.aiConfig.apiKey
     });
   }
 
   /**
-   * Classify ANY email into categories (FAST rule-based classification!)
+   * Classify ANY email into categories
+   * Uses GPT-3.5-turbo for AI classification (cost-effective)
+   * Falls back to rule-based if AI fails
    */
   async classifyEmail(
     from: string,
@@ -61,8 +66,77 @@ export class UniversalEmailClassifier {
     content: string
   ): Promise<EmailClassification> {
     
-    // Use enhanced rule-based classification directly (no LLM needed!)
+    // Try AI classification first if enabled
+    if (this.useAI) {
+      try {
+        return await this.classifyWithAI(from, subject, content);
+      } catch (error: any) {
+        console.warn('⚠️ AI classification failed, falling back to rule-based:', error.message);
+        // Fall through to rule-based
+      }
+    }
+    
+    // Use rule-based classification as fallback or primary
     return this.enhancedRuleBasedClassification(from, subject, content);
+  }
+
+  /**
+   * Classify email using OpenAI GPT-3.5-turbo
+   */
+  private async classifyWithAI(
+    from: string,
+    subject: string,
+    content: string
+  ): Promise<EmailClassification> {
+    const emailSnippet = content.substring(0, 1000); // First 1000 chars for context
+    
+    const prompt = `Classify this email into one of these categories:
+- job_opportunity: Job postings, recruitment emails
+- newsletter: Newsletters, digests, subscriptions
+- shopping_order: Order confirmations, shipping, receipts
+- sales_marketing: Promotions, deals, marketing emails
+- personal: Personal messages from individuals
+- client_business: Business meetings, proposals, contracts
+- report_analytics: Reports, dashboards, analytics
+- spam: Spam, phishing, scams
+- other: Everything else
+
+Email From: ${from}
+Subject: ${subject}
+Content: ${emailSnippet}
+
+Return ONLY valid JSON (no markdown):
+{
+  "category": "one of the categories above",
+  "confidence": 0.0 to 1.0,
+  "priority": "urgent|high|medium|low",
+  "needsReply": true or false,
+  "suggestedAction": "brief action suggestion or null"
+}`;
+
+    const model = this.aiConfig.emailClassificationModel;
+    const completion = await this.openai.chat.completions.create({
+      model: model,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      temperature: 0.1, // Low temperature for consistent classification
+      max_tokens: 200
+    });
+
+    const result = this.parseJSON(completion.choices[0].message.content || '{}');
+    
+    return {
+      category: result.category || 'other',
+      confidence: result.confidence || 0.8,
+      sender: from,
+      subject: subject,
+      priority: result.priority || 'medium',
+      needsReply: result.needsReply || false,
+      suggestedAction: result.suggestedAction,
+      timestamp: new Date().toISOString()
+    };
   }
 
   /**
@@ -300,25 +374,20 @@ export class EmailDatabase {
  */
 
 export class CostTracker {
-  private localClassifications = 0;
   private cloudClassifications = 0;
-
-  trackLocal() {
-    this.localClassifications++;
-  }
+  private totalCost = 0;
 
   trackCloud(cost: number) {
     this.cloudClassifications++;
+    this.totalCost += cost;
   }
 
   getReport() {
-    const saved = this.localClassifications * 0.10; // $0.10 per classification if using GPT-5
-    
     return {
-      localClassifications: this.localClassifications,
       cloudClassifications: this.cloudClassifications,
-      costSaved: saved,
-      monthlyProjection: (saved / this.localClassifications) * 3000 // 100 emails/day
+      totalCost: this.totalCost,
+      averageCostPerEmail: this.cloudClassifications > 0 ? this.totalCost / this.cloudClassifications : 0,
+      monthlyProjection: this.totalCost * 30 // Project daily cost to monthly
     };
   }
 }

@@ -12,7 +12,6 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createHash } from 'crypto';
-import Groq from 'groq-sdk';
 import OpenAI from 'openai';
 import { HybridAI } from './ai/hybrid-ai.js';
 import { UniversalEmailClassifier, EmailDatabase, CostTracker } from './ai/universal-classifier.js';
@@ -33,6 +32,7 @@ export class EmailMonitor {
   private processedEmails: Set<string> = new Set();
   private isMonitoring: boolean = false;
   private reconnectTimer?: NodeJS.Timeout;
+  private lastSeenUid: number = 0;
   private hybridAI: HybridAI; // 🤖 LOCAL + CLOUD AI (saves $300/month!)
   private universalClassifier: UniversalEmailClassifier; // 🏷️ Classifies ALL emails!
   private emailDB: EmailDatabase; // 💾 Stores all classifications
@@ -57,8 +57,8 @@ export class EmailMonitor {
     this.emailDB = new EmailDatabase();
     this.costTracker = new CostTracker();
     
-    logger.info('🤖 Hybrid AI initialized (Groq + GPT-5)');
-    logger.info('🏷️  Universal Email Classifier ready (FREE with Groq API!)');
+    logger.info('🤖 OpenAI AI initialized (GPT-3.5-turbo for classification, GPT-5 for advanced tasks)');
+    logger.info('🏷️  Universal Email Classifier ready (using OpenAI GPT-3.5-turbo)');
     logger.info('💾 Email database loaded');
   }
 
@@ -137,6 +137,17 @@ export class EmailMonitor {
         return;
       }
 
+      // Establish baseline UID so we only process emails arriving after monitor start
+      this.imap.search(['ALL'], (searchErr: Error, results: number[]) => {
+        if (searchErr) {
+          logger.warn(`Could not establish baseline UID: ${searchErr.message}`);
+          this.lastSeenUid = 0;
+        } else {
+          this.lastSeenUid = results && results.length > 0 ? Math.max(...results) : 0;
+          logger.info(`📌 Baseline UID set to ${this.lastSeenUid} (only newer emails will be processed)`);
+        }
+      });
+
       logger.info('📬 Inbox opened, listening for new emails...');
 
       // Listen for new emails
@@ -168,12 +179,20 @@ export class EmailMonitor {
         return;
       }
 
-      logger.info(`Found ${results.length} unread email(s)`);
+      const newUids = results.filter((uid) => uid > this.lastSeenUid);
+      if (newUids.length === 0) {
+        logger.info('No new unread emails since monitor start');
+        return;
+      }
 
-      const fetch = this.imap.fetch(results, {
+      logger.info(`Found ${newUids.length} unread email(s) since start`);
+
+      const fetch = this.imap.fetch(newUids, {
         bodies: '',
         markSeen: false // Don't mark as read yet
       });
+
+      this.lastSeenUid = Math.max(this.lastSeenUid, ...newUids);
 
       fetch.on('message', (msg: any) => {
         msg.on('body', (stream: any) => {
@@ -312,9 +331,9 @@ export class EmailMonitor {
         return;
       }
 
-      // 🏷️ CLASSIFY ALL EMAILS (FREE with Groq!)
+      // 🏷️ CLASSIFY ALL EMAILS (using OpenAI GPT-3.5-turbo)
       
-      logger.info('🏷️  Classifying email with GROQ (FREE & BETTER!)...');
+      logger.info('🏷️  Classifying email with OpenAI GPT-3.5-turbo (cost-effective)...');
       
       // Add timeout to prevent hangs
       const classificationPromise = this.universalClassifier.classifyEmail(
@@ -332,8 +351,8 @@ export class EmailMonitor {
         classificationTimeout
       ]) as any;
       
-      // Track cost savings
-      this.costTracker.trackLocal();
+      // Track AI classification
+      this.costTracker.trackCloud(0.001); // GPT-3.5-turbo is very cheap
       
       // Save to database
       await this.emailDB.saveClassification(emailId, classification);
@@ -346,11 +365,11 @@ export class EmailMonitor {
       if (classification.suggestedAction) {
         logger.info(`   Suggested: ${classification.suggestedAction}`);
       }
-      logger.info(`   💰 Cost: $0 (vs $0.10 with GPT-5)`);
+      logger.info(`   💰 Cost: ~$0.001 (GPT-3.5-turbo - cost-effective)`);
 
-      // Show cost savings
+      // Show cost tracking
       const stats = this.costTracker.getReport();
-      logger.info(`   📊 Total savings: $${stats.costSaved.toFixed(2)} (${stats.localClassifications} emails)`);
+      logger.info(`   📊 Total classifications: ${stats.cloudClassifications} emails`);
 
       // DEBUG LOG: Email saved to database
       logger.info(`   🗄️  Email saved to database with ID: ${emailId}`);
@@ -575,10 +594,10 @@ ${snippet}`;
         logger.info(`   Company: ${classification.company || 'N/A'}`);
         logger.info(`   Role: ${classification.role || 'N/A'}`);
         logger.info(`   Recruiter: ${classification.recruiterName || 'N/A'} (${classification.recruiterEmail || 'N/A'})`);
-        logger.info(`   💰 Cost: $0 (vs $0.10 with GPT-5)`);
+        logger.info(`   💰 Cost: ~$0.001 (GPT-3.5-turbo)`);
       } else {
         logger.info(`❌ NOT a job (Confidence: ${(classification.confidence * 100).toFixed(0)}%)`);
-        logger.info(`   💰 Cost: $0 (saved $0.10!)`);
+        logger.info(`   💰 Cost: ~$0.001 (GPT-3.5-turbo)`);
       }
       
       return isJD;

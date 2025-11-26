@@ -188,7 +188,7 @@ export const tools: Tool[] = [
       required: ['cloud', 'role'],
     },
     handler: async (client, params) => {
-      const latex = tailorResume(params);
+      const latex = await tailorResume(params);
       return { latex };
     },
   },
@@ -287,7 +287,7 @@ export const tools: Tool[] = [
         },
         filenameBase: {
           type: 'string',
-          description: 'Base filename for PDF (default: Nihal_Veeramalla_Resume)',
+          description: 'Base filename for PDF (default: derived from candidate profile)',
         },
       },
       required: ['latex', 'to', 'subject', 'body'],

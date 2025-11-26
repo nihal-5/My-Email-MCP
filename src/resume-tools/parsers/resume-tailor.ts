@@ -1,14 +1,10 @@
 /**
- * Resume Tailor - Applies cloud-specific substitutions to LaTeX template
+ * Resume Tailor - Generates a resume for a requested cloud/role using the candidate profile (no hard-coded template)
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import type { JDAnalysis } from '../ai-customizer.js';
+import { generateSpecCompliantResume } from '../spec-generator.js';
+import { loadCandidateProfile } from '../../utils/candidate.js';
 
 export interface TailorParams {
   cloud: 'azure' | 'aws' | 'gcp';
@@ -16,41 +12,40 @@ export interface TailorParams {
   location: string;
 }
 
-export function tailorResume(params: TailorParams): string {
-  const templatePath = path.join(__dirname, '../templates/resume.tex.tmpl');
-  let template = fs.readFileSync(templatePath, 'utf-8');
+export async function tailorResume(params: TailorParams): Promise<string> {
+  const profile = await loadCandidateProfile();
 
-  // Cloud-specific substitutions based on spec
-  const substitutions: Record<string, Record<string, string>> = {
-    azure: {
-      '{{FISERV_CLOUD}}': 'Azure',
-      '{{FISERV_CLOUD_SEARCH}}': 'Azure AI Search',
-      '{{FISERV_CLOUD_K8S}}': 'AKS',
-      '{{FISERV_OCR}}': 'Azure Form Recognizer',
-      '{{FISERV_CLOUD_SEARCH_SHORT}}': 'Azure AI Search'
-    },
-    gcp: {
-      '{{FISERV_CLOUD}}': 'GCP',
-      '{{FISERV_CLOUD_SEARCH}}': 'Vertex AI Search',
-      '{{FISERV_CLOUD_K8S}}': 'GKE',
-      '{{FISERV_OCR}}': 'Document AI',
-      '{{FISERV_CLOUD_SEARCH_SHORT}}': 'Vertex AI'
-    },
-    aws: {
-      // Fiserv should never be AWS, but including for completeness
-      '{{FISERV_CLOUD}}': 'Azure',
-      '{{FISERV_CLOUD_SEARCH}}': 'Azure AI Search',
-      '{{FISERV_CLOUD_K8S}}': 'AKS',
-      '{{FISERV_OCR}}': 'Azure Form Recognizer',
-      '{{FISERV_CLOUD_SEARCH_SHORT}}': 'Azure AI Search'
-    }
+  const defaultTriggers = {
+    promptEngineering: false,
+    chatbot: false,
+    dispute: false,
+    knowledgeGraph: false,
+    timeSeries: false,
+    aiDevOps: false,
+    healthcare: false,
+    nlp: false
   };
 
-  // Apply substitutions
-  const subs = substitutions[params.cloud];
-  for (const [placeholder, value] of Object.entries(subs)) {
-    template = template.replace(new RegExp(placeholder, 'g'), value);
-  }
+  const mockAnalysis: JDAnalysis = {
+    title: params.role,
+    company: '',
+    requiredSkills: [],
+    cloudFocus: params.cloud,
+    roleTrack: 'genai_platform',
+    domainFocus: 'generic',
+    seniority: 'mid',
+    mustHaveKeywords: [],
+    triggers: defaultTriggers,
+    preferredSkills: [],
+    keyResponsibilities: [],
+    cloudPlatform: params.cloud.toUpperCase() as any,
+    experience: params.location || '',
+    technologies: [],
+    keywords: [],
+    tone: 'technical',
+    source: 'email'
+  };
 
-  return template;
+  const specResult = await generateSpecCompliantResume(mockAnalysis, profile);
+  return specResult.latex;
 }

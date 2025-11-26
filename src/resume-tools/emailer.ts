@@ -51,11 +51,17 @@ export async function sendEmail(params: EmailParams): Promise<EmailResult> {
     // Verify connection
     await transporter.verify();
 
+    // Resolve CC with safe fallback so CC is never silently dropped
+    const ccResolved =
+      params.cc ||
+      process.env.CC_EMAIL ||
+      'Srinu@blueridgeinfotech.com';
+
     // Prepare email options
     const mailOptions: any = {
       from: FROM_EMAIL,
       to: params.to,
-      cc: params.cc || undefined,
+      cc: ccResolved || undefined,
       subject: params.subject,
       text: params.body
     };

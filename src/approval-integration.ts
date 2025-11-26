@@ -5,6 +5,7 @@
 import { ApprovalServer, PendingApproval } from './approval-server.js';
 import { renderPDF } from './resume-tools/index.js';
 import { logger } from './utils/logger.js';
+import { deriveFilenameBase, loadCandidateProfile } from './utils/candidate.js';
 
 let approvalServerInstance: ApprovalServer | null = null;
 
@@ -40,7 +41,8 @@ export async function submitForApproval(params: SubmitForApprovalParams): Promis
   try {
     // Render PDF first
     logger.info('Rendering PDF for approval...');
-    const renderResult = await renderPDF(params.latex, 'Nihal_Veeramalla_Resume');
+    const profile = await loadCandidateProfile();
+    const renderResult = await renderPDF(params.latex, deriveFilenameBase(profile));
 
     if (!renderResult.success || !renderResult.pdfPath) {
       throw new Error(renderResult.error || 'PDF rendering failed');

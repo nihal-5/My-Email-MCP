@@ -5,37 +5,34 @@
 
 import { logger } from '../utils/logger.js';
 import OpenAI from 'openai';
+import { getAIConfig } from '../utils/config.js';
 import { addApplicationAnswersToEmail } from './application-questions.js';
 
 /**
- * Generate content using GPT-5
+ * Generate content using configured AI model (default: GPT-5 for advanced tasks)
  */
-export async function generateWithAI(prompt: string, maxTokens: number = 2000): Promise<string> {
-  const openaiKey = process.env.OPENAI_API_KEY;
-  
-  if (!openaiKey) {
-    throw new Error('OPENAI_API_KEY is not set in environment variables');
-  }
+export async function generateWithAI(prompt: string, maxTokens: number = 2000, modelOverride?: string): Promise<string> {
+  const aiConfig = getAIConfig();
+  const model = modelOverride || aiConfig.jdAnalysisModel;
 
   try {
-    logger.info('🤖 Using GPT-5 for AI generation...');
-    const openaiClient = new OpenAI({ apiKey: openaiKey });
+    logger.info(`🤖 Using ${model} for AI generation...`);
+    const openaiClient = new OpenAI({ apiKey: aiConfig.apiKey });
     
     const response = await openaiClient.chat.completions.create({
-      model: 'gpt-5',
+      model: model,
       messages: [{ 
         role: 'user', 
         content: prompt 
       }],
-      temperature: 0.7,
       max_completion_tokens: maxTokens
     });
       
     const text = response.choices[0]?.message?.content || '';
-    logger.info('✅ Success with GPT-5');
+    logger.info(`✅ Success with ${model}`);
     return text;
   } catch (error: any) {
-    logger.error(`GPT-5 failed: ${error.message}`);
+    logger.error(`${model} failed: ${error.message}`);
     throw error;
   }
 }
@@ -47,6 +44,7 @@ export interface JDAnalysis {
   title: string;
   company?: string;
   hiringManager?: string;  // Hiring manager's name if mentioned
+  recruiterName?: string;  // Recruiter/contact name if parsed
   source?: 'whatsapp' | 'email';  // Where the JD came from
   requiredSkills: string[];
   cloudFocus: 'azure' | 'aws' | 'gcp' | 'oci' | 'none';
@@ -166,15 +164,10 @@ ${jobDescription}
 
 Return ONLY the JSON object, no other text.`;
 
-    const content = await generateWithAI(prompt, 1000);
+    const aiConfig = getAIConfig();
+    const content = await generateWithAI(prompt, 1000, aiConfig.jdAnalysisModel);
     
-    // Extract JSON from the response (handle markdown code blocks)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract JSON from AI response');
-    }
-
-    const analysis = JSON.parse(jsonMatch[0]);
+    const analysis = parseJsonFromText(content, jobDescription);
     logger.info(`JD Analysis complete: ${analysis.title} @ ${analysis.company || 'Unknown Company'}`);
     logger.info(`🎯 Cloud Platform Detected: ${analysis.cloudPlatform || 'Not specified'}`);
 
@@ -183,6 +176,154 @@ Return ONLY the JSON object, no other text.`;
     logger.error(`Error analyzing job description: ${error.message}`);
     throw error;
   }
+}
+
+function parseJsonFromText(text: string, fallbackJD: string): JDAnalysis {
+  const trimmed = text.trim();
+
+  const match = trimmed.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      // fall through
+    }
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Build a safe fallback to avoid hard failure
+    const firstLine = fallbackJD.split(/\n/).find((l) => l.trim().length > 0)?.trim() || 'Role';
+    return {
+      title: firstLine,
+      company: undefined,
+      hiringManager: undefined,
+      requiredSkills: [],
+      cloudFocus: detectCloud(fallbackJD),
+      roleTrack: 'genai_platform',
+      domainFocus: 'generic',
+      seniority: 'mid',
+      mustHaveKeywords: [],
+      triggers: {
+        promptEngineering: false,
+        chatbot: false,
+        dispute: false,
+        knowledgeGraph: false,
+        timeSeries: false,
+        aiDevOps: false,
+        healthcare: false,
+        nlp: false
+      },
+      preferredSkills: [],
+      keyResponsibilities: [],
+      cloudPlatform: undefined,
+      experience: '',
+      technologies: [],
+      keywords: [],
+      tone: 'technical'
+    };
+  }
+}
+
+function detectCloud(text: string): 'azure' | 'aws' | 'gcp' | 'oci' | 'none' {
+  const lower = text.toLowerCase();
+  if (lower.includes('azure')) return 'azure';
+  if (lower.includes('aws') || lower.includes('amazon')) return 'aws';
+  if (lower.includes('gcp') || lower.includes('google cloud')) return 'gcp';
+  if (lower.includes('oci') || lower.includes('oracle')) return 'oci';
+  if (lower.includes('ibm')) return 'oci'; // fallback to oci for oracle/ibm mapping
+  return 'none';
+}
+
+async function loadProfileForEmail() {
+  try {
+    const { loadCandidateProfile } = await import('../utils/candidate.js');
+    return await loadCandidateProfile();
+  } catch (error: any) {
+    logger.warn(`⚠️ Unable to load candidate profile for email context: ${error.message}`);
+    return null;
+  }
+}
+
+function extractLocationFromJD(originalJD: string): string | undefined {
+  // Prefer explicit "Location:" line
+  const lineMatch = originalJD.match(/location\s*[:\-]\s*(.+)/i);
+  if (lineMatch?.[1]) {
+    return lineMatch[1].split(/\r?\n/)[0].trim().replace(/^[\-•\s]+/, '');
+  }
+
+  // Fallback: simple city/state pattern or multi-location slash-separated text
+  const cityStateMatch = originalJD.match(/\b([A-Z][a-zA-Z]+[, ]+(?:[A-Z]{2}|[A-Za-z]+)(?:\s*\/\s*[A-Z][a-zA-Z]+[, ]*(?:[A-Z]{2}|[A-Za-z]+))*)/);
+  if (cityStateMatch?.[1]) {
+    return cityStateMatch[1].trim();
+  }
+
+  return undefined;
+}
+
+function collectCandidateHighlights(profile: any): string[] {
+  const highlights = (profile?.experiences || [])
+    .flatMap((exp: any) => (exp.highlights || []).map((h: any) => h.text))
+    .filter(Boolean)
+    .slice(0, 4);
+  return highlights;
+}
+
+function collectClouds(profile: any): string {
+  const cloudSet = new Set<string>();
+  (profile?.experiences || []).forEach((exp: any) => {
+    (exp.highlights || []).forEach((h: any) => {
+      (h.tags?.clouds || []).forEach((c: string) => cloudSet.add(c.toUpperCase()));
+    });
+  });
+  if (cloudSet.size === 0) {
+    return 'AWS, Azure, GCP';
+  }
+  return Array.from(cloudSet).join(', ');
+}
+
+function buildSignature(candidateInfo: { name: string; email: string; phone: string; title: string; linkedin?: string }, profile: any): string {
+  const lines = [
+    'Thanks,',
+    candidateInfo.name || profile?.name,
+    profile?.title || candidateInfo.title,
+    candidateInfo.email,
+    candidateInfo.phone
+  ].filter(Boolean);
+
+  const linkedin = profile?.links?.linkedin || candidateInfo.linkedin;
+  if (linkedin) lines.push(`LinkedIn: ${linkedin}`);
+
+  return lines.join('\n');
+}
+
+// Lightweight contact-name extractor from JD text (email local part or sign-off)
+function deriveContactNameFromJD(jd: string): string | undefined {
+  if (!jd) return undefined;
+  // Try to grab sign-off names (e.g., "Thanks, John Doe")
+  const signoffMatch = jd.match(/(?:thanks|regards|sincerely)[^\\w\\n]{0,10}([A-Za-z][A-Za-z .'-]{1,40})/i);
+  if (signoffMatch && signoffMatch[1]) {
+    const name = signoffMatch[1].trim();
+    if (name.split(' ').length <= 4) return name.replace(/\s+/g, ' ');
+  }
+  // Fall back to email local-part (e.g., ayushy1@ -> Ayushy)
+  const emailMatch = jd.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+/i);
+  if (emailMatch) {
+    const local = emailMatch[0].split('@')[0]
+      .replace(/\d+/g, '')
+      .replace(/[._]+/g, ' ')
+      .trim();
+    if (local) {
+      // Capitalize words
+      return local
+        .split(' ')
+        .filter(Boolean)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -306,7 +447,8 @@ ${originalJD}
 Now transform this resume to DEEPLY match the job posting while keeping the core truth intact.
 Return ONLY the modified LaTeX code, no explanations, no markdown blocks.`;
 
-    let customizedResume = await generateWithAI(prompt, 4000);
+    const aiConfig = getAIConfig();
+    let customizedResume = await generateWithAI(prompt, 4000, aiConfig.resumeGenerationModel);
 
     logger.info(`Raw AI response length: ${customizedResume.length} characters`);
     logger.info(`Raw response starts with: ${customizedResume.substring(0, 100)}`);
@@ -358,42 +500,72 @@ export async function generatePersonalizedEmail(
 }> {
   logger.info(`Generating personalized email for ${jdAnalysis.title} position...`);
 
+  const profile = await loadProfileForEmail();
+  const locationHint = extractLocationFromJD(originalJD);
+  const overallExperience = profile?.application?.overallExperience || '6+ years';
+  const cloudContext = collectClouds(profile);
+  const candidateHighlights = collectCandidateHighlights(profile);
+  const candidateSummary = profile?.summary?.base || '';
+  const signature = buildSignature(
+    {
+      name: candidateInfo.name,
+      email: candidateInfo.email,
+      phone: candidateInfo.phone,
+      title: candidateInfo.title,
+      linkedin: candidateInfo.linkedin
+    },
+    profile || {}
+  );
+
   try {
-    const hiringManagerName = jdAnalysis.hiringManager || 'Hiring Manager';
-    const greeting = jdAnalysis.hiringManager ? `Hi ${jdAnalysis.hiringManager},` : 'Dear Hiring Manager,';
+    // Prefer explicit names; fall back to recruiter/contact parsed from JD text
+    const contactName =
+      jdAnalysis.hiringManager ||
+      jdAnalysis.recruiterName ||
+      deriveContactNameFromJD(originalJD);
+    const greeting = contactName
+      ? `Hi ${contactName},`
+      : 'Dear Hiring Manager,';
+    const company = jdAnalysis.company || 'your company';
     
     // Different opening based on source
     const isEmailSource = jdAnalysis.source === 'email';
     const opening = isEmailSource
-      ? `Thank you for reaching out regarding the ${jdAnalysis.title} position at ${jdAnalysis.company || 'your company'}. I am very interested in this opportunity`
-      : `I came across the ${jdAnalysis.title} position at ${jdAnalysis.company || 'your company'} and am very interested in applying`;
+      ? `Thank you for reaching out regarding the ${jdAnalysis.title} position at ${company}. I am very interested in this opportunity`
+      : `I came across the ${jdAnalysis.title} position at ${company} and am very interested in applying`;
     
     const prompt = `You are an expert at writing concise, professional job application emails.
 
-Write a SHORT email (EXACTLY 2 paragraphs, ~80 words total) that:
+Write a SHORT email (EXACTLY 2 paragraphs, 90-130 words total) that:
 1. Starts with "${greeting}"
 2. Opens with EXACTLY this sentence (DO NOT REPHRASE): "${opening}"
-3. Briefly mentions 1-2 key requirements from the JD and how candidate matches them
-4. Ends with a simple closing asking to discuss further
+3. Uses THIS CANDIDATE BACKGROUND (facts only, no invention):
+   - Experience: ${overallExperience} as ${profile?.title || candidateInfo.title}
+   - Summary: ${candidateSummary || 'AI/ML engineer with production LLM + RAG delivery'}
+   - Highlights: ${candidateHighlights.join(' | ') || 'LLM/RAG builds, LangChain/LangGraph, evaluations, observability'}
+   - Clouds: ${cloudContext}
+4. Mentions 2-3 high-impact matches from THIS JD (skills/tools/cloud), prioritizing generative AI, LLM fine-tuning/prompt engineering, RAG, LangChain/LangGraph/LlamaIndex, and synthetic data if present. Include location ${locationHint ? `(${locationHint})` : '(if mentioned in JD)' } naturally.
+5. Ends with a simple closing asking to discuss further (no fluff)
 
 Structure (STRICT - EXACTLY 2 PARAGRAPHS):
-- Paragraph 1: MUST start with EXACTLY: "${opening}" (COPY VERBATIM, DO NOT CHANGE) + 2 sentences about fit/qualifications
-- Paragraph 2: Brief closing asking to discuss further (NO contact details, NO application details list)
+- Paragraph 1: MUST start with EXACTLY: "${opening}" (COPY VERBATIM, DO NOT CHANGE) + 2 sentences highlighting experience (years, current title) and 2-3 concrete matches to the JD using the candidate background above
+- Paragraph 2: Brief closing that mentions the attached resume, invites a quick call, and keeps a confident, upbeat tone
 
 CRITICAL RULES:
 - EXACTLY 2 PARAGRAPHS (use \\n\\n between them)
-- MAXIMUM 80 words total
+- 90-130 words total
 - First paragraph MUST start with EXACTLY (word-for-word): "${opening}"
 - Use ${greeting} as greeting
-- DO NOT include phone/email/signature in body (added separately)
+- Do NOT list contact fields; a short sign-off is okay, full signature will be added separately
 - DO NOT say "Please feel free to contact me at..." (redundant)
-- DO NOT add "APPLICATION DETAILS" section or list contact info (already in signature)
+- DO NOT add "APPLICATION DETAILS" section or list contact info (added separately)
 - SIMPLE 2-PARAGRAPH EMAIL ONLY
+- Use only information from the JD text and candidate background provided. Avoid generic claims.
 
 Return ONLY this JSON:
 {
   "subject": "Application for ${jdAnalysis.title}",
-  "body": "Email body with \\n\\n between paragraphs (2 paragraphs, ~80 words, NO contact details, NO application details)"
+  "body": "Email body with \\n\\n between paragraphs (2 paragraphs, ~100-120 words, NO contact details, NO application details)"
 }
 
 Candidate Information:
@@ -410,7 +582,8 @@ ${JSON.stringify(jdAnalysis, null, 2)}
 
 Write a concise, personalized job application email (max 150 words).`;
 
-    const text = await generateWithAI(prompt, 800);  // Reduced for shorter emails
+    const aiConfig = getAIConfig();
+    const text = await generateWithAI(prompt, 800, aiConfig.emailGenerationModel);  // Reduced for shorter emails
 
     // ⚠️ CLEAN JSON: Remove markdown but KEEP structure
     let cleanedText = text
@@ -477,19 +650,18 @@ Write a concise, personalized job application email (max 150 words).`;
       logger.info('✅ Fixed email opening for whatsapp source');
     }
     
-    // Clean up extra newlines
-    emailBody = emailBody.replace(/\n\n\n+/g, '\n\n');
-    
-    // Check if full signature is missing
-    if (!emailBody.includes(candidateInfo.email) && !emailBody.includes(candidateInfo.phone)) {
-      // Full signature missing - add everything
-      const linkedinLine = linkedin ? `\nLinkedIn: ${linkedin}` : '';
-      emailBody = emailBody.trim() + `\n\nBest regards,\n${candidateInfo.name}\n${candidateInfo.email}\n${candidateInfo.phone}${linkedinLine}`;
-    } else if (linkedin && !emailBody.includes(linkedin)) {
-      // Signature present but LinkedIn missing - add just LinkedIn
-      emailBody = emailBody.trim() + `\nLinkedIn: ${linkedin}`;
+    // Enforce 2 paragraphs and trim length
+    let paragraphs = emailBody.split(/\n\s*\n/).filter((p: string) => p.trim().length > 0);
+    if (paragraphs.length > 2) paragraphs = paragraphs.slice(0, 2);
+    if (paragraphs.length < 2 && paragraphs.length > 0) {
+      paragraphs.push('I would welcome the opportunity to discuss how my experience aligns with this role.');
     }
-
+    emailBody = paragraphs.join('\n\n').replace(/\n\n\n+/g, '\n\n');
+    const words = emailBody.split(/\s+/);
+    if (words.length > 130) {
+      emailBody = words.slice(0, 130).join(' ');
+    }
+    
     // ⚠️ SAFEGUARD: Clean and limit subject line length
     let cleanTitle = (jdAnalysis.title || 'Position').trim();
     
@@ -516,16 +688,21 @@ Write a concise, personalized job application email (max 150 words).`;
     // emailBody = addApplicationAnswersToEmail(emailBody, originalJD);
 
     // Build clean subject line
-    const subject = emailData.subject || `Application for ${cleanTitle} - ${candidateInfo.name}`;
+    let subject = emailData.subject || `Application for ${cleanTitle} at ${company}`;
+    if (locationHint && !subject.toLowerCase().includes(locationHint.toLowerCase())) {
+      subject = `${subject} – ${locationHint}`;
+    }
     
     // Final check: if subject is STILL too long, truncate
     const finalSubject = subject.length > 150 
       ? `Application for ${cleanTitle} - ${candidateInfo.name}`.substring(0, 147) + '...'
       : subject;
 
+    const signatureBlock = signature ? `\n\n${signature}` : '';
+
     return {
       subject: finalSubject,
-      body: emailBody  // Now includes signature + application answers!
+      body: `${emailBody}${signatureBlock}`
     };
   } catch (error: any) {
     logger.error(`Error generating email with AI: ${error.message}`);
@@ -557,20 +734,15 @@ const keyTech = jdAnalysis.keywords?.slice(0, 2).join(', ') || jdAnalysis.techno
       ? `Thank you for reaching out regarding the ${cleanTitle} position at ${companyName}. With extensive experience in ${skillText}, I am confident I can make immediate contributions to your team.`
       : `I am writing to express my strong interest in the ${cleanTitle} position at ${companyName}. With extensive experience in ${skillText}, I am confident I can make immediate contributions to your team.`;
 
+const locationText = locationHint ? ` for ${locationHint}` : '';
+
 return {
-  subject: `Application for ${cleanTitle} - ${candidateInfo.name}`,
+  subject: `Application – ${cleanTitle}${locationHint ? ` – ${locationHint}` : ''} – ${candidateInfo.name}`,
   body: `${greeting}
 
-${fallbackOpening}
+I came across your ${cleanTitle} opening${companyName ? ` at ${companyName}` : ''}${locationText} and am very interested. I have ${overallExperience} working on generative AI and ML products and currently build production-grade LLM + RAG solutions with LangChain/LangGraph, LlamaIndex, and models such as OpenAI, Claude, LLaMA, and Mistral, including fine-tuning, prompt engineering, and synthetic data generation.
 
-In my recent roles, I have successfully delivered ${keyTech}-based solutions and worked with cross-functional teams to deploy production systems. My background aligns well with the requirements outlined in your job description, particularly in areas of ${topSkills[0] || 'AI/ML development'}.
-
-I would welcome the opportunity to discuss how my experience can benefit ${companyName}. Please find my resume attached for your review.
-
-Best regards,
-${candidateInfo.name}
-${candidateInfo.email}
-${candidateInfo.phone}${(candidateInfo as any).linkedin ? `\nLinkedIn: ${(candidateInfo as any).linkedin}` : ''}`
+Recently I’ve deployed GenAI workloads on AWS, Azure, and GCP using Bedrock/SageMaker, Azure OpenAI/AI Search, and Vertex AI for low-latency services. I’d welcome a quick call to discuss how this maps to your needs; I’ve attached my resume for your review.${signature ? `\n\n${signature}` : ''}`
     };
   }
 }
@@ -580,13 +752,14 @@ ${candidateInfo.phone}${(candidateInfo as any).linkedin ? `\nLinkedIn: ${(candid
  * NOW USING SPEC-BASED GENERATION (rule-based, no AI for resume content)
  */
 export async function aiCustomizeApplication(
-  baseResumeTemplate: string,  // NOTE: Now ignored - we generate from spec
+  _baseResumeTemplate: string,  // legacy param (ignored, kept for compatibility)
   jobDescription: string,
-  candidateInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    title: string;
+  candidateInfo?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    title?: string;
+    linkedin?: string;
   }
 ): Promise<{
   customizedResume: string;
@@ -599,21 +772,44 @@ export async function aiCustomizeApplication(
   // Step 1: Analyze the job description with AI
   const analysis = await analyzeJobDescription(jobDescription);
 
-  // Step 2: Generate spec-compliant resume (rule-based, no AI)
+  // Resolve candidate profile (env/file) with optional overrides from candidateInfo
+  const { loadCandidateProfile } = await import('../utils/candidate.js');
+  const profile = await loadCandidateProfile();
+  const mergedProfile = {
+    ...profile,
+    name: candidateInfo?.name || profile.name,
+    title: candidateInfo?.title || profile.title,
+    email: candidateInfo?.email || profile.email,
+    phone: candidateInfo?.phone || profile.phone,
+    links: {
+      ...profile.links,
+      linkedin: candidateInfo?.linkedin || profile.links?.linkedin
+    }
+  };
+
+  // Step 2: Generate spec-compliant resume (rule-based, no AI) using candidate profile
   const { generateSpecCompliantResume } = await import('./spec-generator.js');
-  const specResult = await generateSpecCompliantResume(analysis);
+  const specResult = await generateSpecCompliantResume(analysis, mergedProfile);
   
   logger.info('📊 Resume Generation Metadata:');
-  logger.info(`   - Fiserv Cloud: ${specResult.metadata.fiservCloud}`);
-  logger.info(`   - Hyperleap Cloud: ${specResult.metadata.hyperleapCloud}`);
-  logger.info(`   - Fiserv Bullets: ${specResult.metadata.fiservBulletCount}`);
-  logger.info(`   - Hyperleap Bullets: ${specResult.metadata.hyperleapBulletCount}`);
-  logger.info(`   - Infolab Bullets: ${specResult.metadata.infolabBulletCount}`);
-  logger.info(`   - Summary Template: ${specResult.metadata.summaryTemplate}`);
-  logger.info(`   - Triggers Applied: ${specResult.metadata.triggersApplied.join(', ') || 'None'}`);
+  logger.info(`   - Candidate: ${specResult.metadata.candidateName}`);
+  logger.info(`   - Cloud Focus: ${specResult.metadata.cloudFocus}`);
+  logger.info(`   - Experiences: ${specResult.metadata.experienceCount}`);
+  logger.info(`   - Highlights Used: ${specResult.metadata.highlightsUsed}`);
+  logger.info(`   - Summary Variant: ${specResult.metadata.summaryVariant}`);
 
   // Step 3: Generate personalized email (still uses AI)
-  const email = await generatePersonalizedEmail(candidateInfo, analysis, jobDescription);
+  const email = await generatePersonalizedEmail(
+    {
+      name: mergedProfile.name,
+      email: mergedProfile.email,
+      phone: mergedProfile.phone,
+      title: mergedProfile.title,
+      linkedin: mergedProfile.links?.linkedin
+    },
+    analysis,
+    jobDescription
+  );
 
   logger.info('✅ Spec-based customization workflow complete');
 

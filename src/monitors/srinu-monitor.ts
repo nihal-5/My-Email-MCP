@@ -112,6 +112,12 @@ export class SrinuMonitor {
 
   private async checkForNewMessages(): Promise<void> {
     try {
+      // If WhatsApp client is not ready, skip this poll silently
+      if (!(this.client as any).isClientReady || !(this.client as any).isClientReady()) {
+        logger.debug('Srinu monitor: client not ready, skipping poll');
+        return;
+      }
+
       // Get recent messages from Srinu's chat
       const messages = await this.client.getMessages({
         chatId: SRINU_CHAT_ID,

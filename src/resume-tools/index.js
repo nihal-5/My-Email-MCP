@@ -9,7 +9,7 @@ export { sendEmail } from './emailer.js';
 import { renderPDF } from './renderer.js';
 import { sendEmail } from './emailer.js';
 export async function renderAndEmail(params) {
-    const filenameBase = params.filenameBase || 'Nihal_Veeramalla_Resume';
+    const filenameBase = params.filenameBase || 'candidate_resume';
     // Step 1: Render PDF
     const renderResult = await renderPDF(params.latex, filenameBase);
     if (!renderResult.success || !renderResult.pdfPath) {

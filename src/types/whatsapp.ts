@@ -8,6 +8,7 @@ export interface WhatsAppConfig {
   sessionStoragePath: string;
   autoLogin: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  enableEmailMonitor: boolean;
 }
 
 export interface ChatInfo {

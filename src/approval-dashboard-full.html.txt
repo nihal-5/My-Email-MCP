@@ -239,7 +239,7 @@ Contact: recruiter@company.com"
               N
             </div>
             <div>
-              <div style="font-weight: 600; font-size: 14px; color: #202124;">Nihal Veeramalla</div>
+              <div style="font-weight: 600; font-size: 14px; color: #202124;">Candidate Name</div>
               <div style="font-size: 12px; color: #5f6368;">nihal.veeramalla@gmail.com</div>
             </div>
           </div>
@@ -252,7 +252,7 @@ Contact: recruiter@company.com"
 
         <!-- Subject -->
         <div style="margin-bottom: 10px;">
-          <h3 id="preview-subject" style="font-size: 17px; font-weight: 400; color: #202124; margin: 0;">Application – Title AI Engineer – Nihal Veeramalla</h3>
+          <h3 id="preview-subject" style="font-size: 17px; font-weight: 400; color: #202124; margin: 0;">Application – Title AI Engineer – Candidate Name</h3>
         </div>
 
         <!-- Email Body -->
@@ -268,7 +268,7 @@ Contact: recruiter@company.com"
           <!-- Signature -->
           <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
             <p style="margin: 0 0 2px 0; color: #1a73e8; font-weight: 600; font-size: 13px;">Thanks & Regards,</p>
-            <p style="margin: 0 0 2px 0; color: #1a73e8; font-weight: 600; font-size: 13px;">Nihal Veeramalla</p>
+            <p style="margin: 0 0 2px 0; color: #1a73e8; font-weight: 600; font-size: 13px;">Candidate Name</p>
             <p style="margin: 0 0 2px 0; color: #5f6368; font-size: 12px;">Data Scientist</p>
             <p style="margin: 0 0 2px 0;"><a href="https://linkedin.com/in/nihalveeramalla" style="color: #1a73e8; text-decoration: none; font-size: 12px;">Linkedin</a></p>
             <p style="margin: 0 0 2px 0; color: #5f6368; font-size: 12px;">Ph: 313-288-2859 📞</p>
@@ -283,7 +283,7 @@ Contact: recruiter@company.com"
               <svg style="width: 20px; height: 20px; fill: white;" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>
             </div>
             <div style="flex: 1;">
-              <div style="font-weight: 500; font-size: 13px; color: #202124;">Nihal_Resume_CV.pdf</div>
+              <div style="font-weight: 500; font-size: 13px; color: #202124;">Candidate_Resume.pdf</div>
               <div style="font-size: 11px; color: #5f6368; margin-top: 1px;">PDF</div>
             </div>
           </div>
@@ -316,7 +316,7 @@ Contact: recruiter@company.com"
 
         <div style="padding: 12px; background: #f5f7fa; border-radius: 6px; border-left: 4px solid #667eea;">
           <div style="font-size: 13px; color: #666;">
-            <span style="font-size: 16px;">📎</span> <strong style="color: #333;">Attachment:</strong> Nihal_Resume_CV.pdf
+            <span style="font-size: 16px;">📎</span> <strong style="color: #333;">Attachment:</strong> Candidate_Resume.pdf
           </div>
         </div>
 
@@ -769,7 +769,7 @@ Contact: recruiter@company.com"
         cc: 'Srinu@blueridgeinfotech.com',
         subject: submission.emailSubject,
         body: submission.emailBody,
-        filenameBase: 'Nihal_Veeramalla_Resume'
+        filenameBase: 'candidate_resume'
       });
 
       if (result.success) {
@@ -844,7 +844,7 @@ Contact: recruiter@company.com"
       });
 
       // Regenerate resume with same parameters
-      const latex = tailorResume({
+      const latex = await tailorResume({
         cloud: submission.parsedData.cloud,
         role: submission.parsedData.role,
         location: submission.parsedData.location
@@ -862,7 +862,7 @@ Contact: recruiter@company.com"
       }
 
       // Render PDF
-      const pdfResult = await renderPDF(latex, 'Nihal_Veeramalla_Resume');
+      const pdfResult = await renderPDF(latex, 'candidate_resume');
       if (!pdfResult.success) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: pdfResult.error }));
@@ -922,7 +922,7 @@ Contact: recruiter@company.com"
 
       // Step 2: Tailor resume
       console.log('Step 2: Tailoring resume...');
-      const latex = tailorResume({
+      const latex = await tailorResume({
         cloud: parsed.cloud,
         role: parsed.role,
         location: parsed.location
@@ -945,7 +945,7 @@ Contact: recruiter@company.com"
 
       // Step 4: Render PDF
       console.log('Step 4: Rendering PDF...');
-      const pdfResult = await renderPDF(latex, 'Nihal_Veeramalla_Resume');
+      const pdfResult = await renderPDF(latex, 'candidate_resume');
       if (!pdfResult.success) {
         console.error('  PDF rendering failed:', pdfResult.error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -959,21 +959,16 @@ Contact: recruiter@company.com"
 
       // Create email body
       const recruiterName = parsed.recruiterName || 'Hiring Manager';
-      const emailSubject = `Application – ${parsed.role} – Nihal Veeramalla`;
+      const emailSubject = `Application – ${parsed.role}`;
       const emailBody = `Hi ${recruiterName},\n\n` +
         `I'm interested in the ${parsed.role} role${parsed.location ? ' in ' + parsed.location : ''}. ` +
-        `I've built production agentic systems and RAG-backed assistants, integrated them with enterprise microservices, ` +
-        `and shipped low-latency model serving with strong observability and governance. ` +
-        `At Fiserv, I delivered an internal copilot that combined multi-agent orchestration, retrieval, and private LLMs, ` +
-        `integrated via REST/gRPC with existing services.\n\n` +
+        `I build production-grade copilots, retrieval systems, and LLM services with strong evaluation, observability, and governance.\n\n` +
         `I've attached my resume for your review.\n\n` +
         `--\n` +
-        `Thanks & Regards,\n` +
-        `Nihal Veeramalla\n` +
-        `Data Scientist\n` +
-        `Linkedin: https://www.linkedin.com/in/nihal-veeramalla/\n` +
-        `Ph: 313-288-2859\n` +
-        `Email: nihal.veeramalla@gmail.com`;
+        `Best regards,\n` +
+        `Your Name\n` +
+        `your.email@example.com\n` +
+        `+1-000-000-0000`;
 
       const submission = {
         id: submissionId,
@@ -1051,7 +1046,7 @@ Contact: recruiter@company.com"
         cc: 'Srinu@blueridgeinfotech.com',
         subject,
         body: emailBody,
-        filenameBase: 'Nihal_Veeramalla_Resume'
+        filenameBase: 'candidate_resume'
       });
 
       if (result.success) {
@@ -1125,9 +1120,9 @@ Contact: recruiter@company.com"
         emailBody,
         ``,
         `--${boundary}`,
-        `Content-Type: application/pdf; name="Nihal_Veeramalla_Resume.pdf"`,
+        `Content-Type: application/pdf; name="candidate_resume.pdf"`,
         `Content-Transfer-Encoding: base64`,
-        `Content-Disposition: attachment; filename="Nihal_Veeramalla_Resume.pdf"`,
+        `Content-Disposition: attachment; filename="candidate_resume.pdf"`,
         ``,
         pdfBase64,
         ``,

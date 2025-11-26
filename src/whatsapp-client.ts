@@ -3,6 +3,10 @@ const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
 import { logger } from './utils/logger.js';
 import { getConfig } from './utils/config.js';
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import puppeteer from 'puppeteer';
 import {
   ChatInfo,
   MessageInfo,
@@ -16,17 +20,24 @@ import {
 export class WhatsAppClient {
   private client: any;
   private isReady: boolean = false;
+  private reconnectTimer?: NodeJS.Timeout;
   private config = getConfig();
+  private profileDir: string;
 
   constructor() {
+    // Dedicated, persistent profile directory (locks cleared before use)
+    this.profileDir = path.join(this.config.sessionStoragePath, '.whatsapp-profile');
+    fs.mkdirSync(this.profileDir, { recursive: true });
+
     // Initialize WhatsApp client with local authentication
     this.client = new Client({
       authStrategy: new LocalAuth({
-        dataPath: this.config.sessionStoragePath,
+        dataPath: this.profileDir,
       }),
       puppeteer: {
+        // Use bundled Chromium headless for maximum stability (avoids Mac app crashes)
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        executablePath: puppeteer.executablePath(),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -44,7 +55,7 @@ export class WhatsAppClient {
           '--mute-audio',
           '--no-default-browser-check',
           '--disable-blink-features=AutomationControlled',
-          `--user-data-dir=${this.config.sessionStoragePath}/.chrome-profile`,
+          `--user-data-dir=${this.profileDir}`,
         ],
       },
     });
@@ -67,6 +78,10 @@ export class WhatsAppClient {
     // Client ready
     this.client.on('ready', () => {
       this.isReady = true;
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = undefined;
+      }
       logger.info('WhatsApp client is ready!');
     });
 
@@ -79,6 +94,24 @@ export class WhatsAppClient {
     this.client.on('disconnected', (reason: string) => {
       this.isReady = false;
       logger.warn('Client disconnected:', reason);
+      // Attempt soft-reconnect after a short delay to avoid manual restarts
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+      }
+      this.reconnectTimer = setTimeout(async () => {
+        try {
+          logger.info('Attempting WhatsApp reconnect...');
+          this.cleanProfileLocksAndProcs();
+          try {
+            await this.client.destroy();
+          } catch {
+            // ignore
+          }
+          await this.client.initialize();
+        } catch (err: any) {
+          logger.error(`Reconnect failed: ${err.message}`);
+        }
+      }, 5000);
     });
 
     // Message received
@@ -89,6 +122,12 @@ export class WhatsAppClient {
 
   async initialize(): Promise<void> {
     logger.info('Initializing WhatsApp client...');
+    this.cleanProfileLocksAndProcs();
+    try {
+      await this.client.destroy();
+    } catch {
+      // ignore if not yet initialized
+    }
     await this.client.initialize();
   }
 
@@ -99,6 +138,31 @@ export class WhatsAppClient {
     }
     if (!this.isReady) {
       throw new Error('Client initialization timeout');
+    }
+  }
+
+  /**
+   * Clear chromium profile lock files AND kill stray chromium processes using this profile
+   * to prevent SingletonLock errors and reconnect loops.
+   */
+  private cleanProfileLocksAndProcs(): void {
+    try {
+      const base = this.profileDir;
+      const locks = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+      locks.forEach((file) => {
+        const target = path.join(base, file);
+        if (fs.existsSync(target)) {
+          fs.rmSync(target, { force: true });
+        }
+      });
+      // Kill any lingering Chrome processes pointing to this profile dir
+      try {
+        execSync(`pkill -f "${base}"`, { stdio: 'ignore' });
+      } catch {
+        // Ignore pkill absence or no process matched
+      }
+    } catch (err: any) {
+      logger.warn(`Could not clear Chrome locks: ${err.message}`);
     }
   }
 

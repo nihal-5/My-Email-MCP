@@ -18,7 +18,7 @@ export interface RenderResult {
 
 export async function renderPDF(
   latex: string,
-  filenameBase: string = 'Nihal_Veeramalla_Resume'
+  filenameBase: string = 'candidate_resume'
 ): Promise<RenderResult> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outboxDir = path.join(process.cwd(), 'outbox');

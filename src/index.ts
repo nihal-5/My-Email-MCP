@@ -77,51 +77,63 @@ async function main() {
     // Set approval server for tools
     setApprovalServer(approvalServer);
 
-    logger.info('✅ Dashboard is running at http://localhost:3001/approval');
+    logger.info(`✅ Dashboard is running at http://localhost:${config.approvalPort}/approval`);
     logger.info('');
 
     // Start MCP server
-    logger.info('Starting MCP server on port 3000...');
+    logger.info(`Starting MCP server on port ${config.mcpPort}...`);
     mcpServer = new MCPServer();
     await mcpServer.start();
-    logger.info('✅ MCP server is ready on port 3000');
+    logger.info(`✅ MCP server is ready on port ${config.mcpPort}`);
 
-    // Initialize WhatsApp Client (TEMPORARILY DISABLED FOR TESTING)
+    // Initialize WhatsApp Client
     logger.info('');
-    logger.info('⚠️  WhatsApp monitoring DISABLED for email classification testing');
-    // whatsappClient = new WhatsAppClient();
-    // await whatsappClient.initialize();
-    // logger.info('✅ WhatsApp client initialized');
+    logger.info('Starting WhatsApp client...');
+    whatsappClient = new WhatsAppClient();
+    await whatsappClient.initialize();
+    logger.info('✅ WhatsApp client initialized');
+    // Wait until the client is ready before starting monitors to avoid "Client is not ready"
+    try {
+      await whatsappClient.waitForReady(60000);
+      logger.info('✅ WhatsApp client is ready - proceeding to start monitors');
+    } catch (error: any) {
+      logger.warn(`⚠️ WhatsApp client not ready after waiting: ${error.message}`);
+      logger.warn('   Monitors will start, but you may see temporary "Client is not ready" until it connects');
+    }
 
     // Start WhatsApp monitors
-    // logger.info('Starting WhatsApp monitors...');
-    // srinuMonitor = new SrinuMonitor(whatsappClient);
-    // await srinuMonitor.start();
-    // logger.info('✅ Srinu Monitor started');
+    logger.info('Starting WhatsApp monitors...');
+    srinuMonitor = new SrinuMonitor(whatsappClient);
+    await srinuMonitor.start();
+    logger.info('✅ Srinu Monitor started');
 
-    // healthMonitor = new HealthMonitor(whatsappClient);
-    // await healthMonitor.start();
-    // logger.info('✅ Health Monitor started');
+    healthMonitor = new HealthMonitor(whatsappClient);
+    await healthMonitor.start();
+    logger.info('✅ Health Monitor started');
 
-    // powerMonitor = new PowerMonitor(whatsappClient);
-    // await powerMonitor.start();
-    // logger.info('✅ Power Monitor started');
+    powerMonitor = new PowerMonitor(whatsappClient);
+    await powerMonitor.start();
+    logger.info('✅ Power Monitor started');
 
     // Start Email monitor (required for this version)
-    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-      try {
-        logger.info('Starting Email monitor for incoming JDs...');
-        emailMonitor = new EmailMonitor();
-        await emailMonitor.start();
-        logger.info('✅ Email monitor started - watching inbox for JDs');
-      } catch (error: any) {
-        logger.warn(`⚠️ Email monitor not started: ${error.message}`);
-        logger.info('   Set GMAIL_USER and GMAIL_APP_PASSWORD in .env to enable');
+    if (config.enableEmailMonitor) {
+      if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+        try {
+          logger.info('Starting Email monitor for incoming JDs...');
+          emailMonitor = new EmailMonitor();
+          await emailMonitor.start();
+          logger.info('✅ Email monitor started - watching inbox for JDs');
+        } catch (error: any) {
+          logger.warn(`⚠️ Email monitor not started: ${error.message}`);
+          logger.info('   Set GMAIL_USER and GMAIL_APP_PASSWORD in .env to enable');
+        }
+      } else {
+        logger.info('✋ Email monitor REQUIRES Gmail credentials');
+        logger.info('   Set GMAIL_USER and GMAIL_APP_PASSWORD in .env');
+        logger.info('   Then restart the application');
       }
     } else {
-      logger.info('✋ Email monitor REQUIRES Gmail credentials');
-      logger.info('   Set GMAIL_USER and GMAIL_APP_PASSWORD in .env');
-      logger.info('   Then restart the application');
+      logger.info('⏸️ Email monitor disabled (EMAIL_MONITOR_ENABLED=false)');
     }
 
     logger.info('='.repeat(80));

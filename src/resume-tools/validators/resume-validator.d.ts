@@ -1,5 +1,5 @@
 /**
- * Resume Validator - Enforces strict formatting and content rules
+ * Resume Validator - Basic sanity checks (no hard-coded identity)
  */
 export interface ValidationResult {
     ok: boolean;

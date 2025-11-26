@@ -1,158 +1,70 @@
 \documentclass[10pt, letterpaper]{article}
-
-% Packages:
-\usepackage[
-    ignoreheadfoot,
-    top=1 cm,
-    bottom=1.5 cm,
-    left=2 cm,
-    right=2 cm,
-    footskip=0.5 cm
-]{geometry}
-\usepackage{titlesec}
-\usepackage{tabularx}
-\usepackage{array}
-\usepackage[dvipsnames]{xcolor}
+\usepackage[ignoreheadfoot, top=2 cm, bottom=2 cm, left=2 cm, right=2 cm, footskip=1.0 cm]{geometry}
+\usepackage{titlesec,tabularx,array,xcolor,enumitem,fontawesome5,amsmath,hyperref,eso-pic,calc,bookmark,lastpage,changepage,paracol,ifthen,needspace,iftex}
 \definecolor{primaryColor}{RGB}{0, 0, 0}
-\usepackage{enumitem}
-\usepackage{amsmath}
-\usepackage[
-    pdftitle={Nihal Veeramalla Resume},
-    pdfauthor={Nihal Veeramalla},
-    pdfcreator={LaTeX},
-    colorlinks=true,
-    urlcolor=primaryColor
-]{hyperref}
-\usepackage[pscoord]{eso-pic}
-\usepackage{calc}
-\usepackage{bookmark}
-\usepackage{lastpage}
-\usepackage{changepage}
-\usepackage{paracol}
-\usepackage{needspace}
-\usepackage{iftex}
-
-% Ensure machine-readable/ATS parsable:
+\hypersetup{pdftitle={Candidate Resume}, pdfauthor={Candidate Name}, pdfcreator={LaTeX}, colorlinks=true, urlcolor=primaryColor}
 \ifPDFTeX
-    \input{glyphtounicode}
-    \pdfgentounicode=1
-    \usepackage[T1]{fontenc}
-    \usepackage[utf8]{inputenc}
-    \usepackage{lmodern}
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
 \fi
-
-\usepackage{tgtermes}  % Times-like font, professional
-\usepackage[scaled=0.92]{helvet}  % Helvetica for sans-serif
-
-% Global spacing tweaks:
+\usepackage{charter}
 \raggedright
-\AtBeginEnvironment{adjustwidth}{\partopsep0pt}
 \pagestyle{empty}
 \setcounter{secnumdepth}{0}
 \setlength{\parindent}{0pt}
-\setlength{\topskip}{0pt}
 \setlength{\columnsep}{0.15cm}
 \setlength{\parskip}{2pt}
-\pagenumbering{gobble}
-
-\titleformat{\section}{\needspace{4\baselineskip}\sffamily\bfseries\LARGE}{}{0pt}{}[\vspace{4pt}{\titlerule[1.5pt]}]
-\titlespacing{\section}{-1pt}{0.4 cm}{0.3 cm}
-
-\newenvironment{highlights}{
-    \begin{itemize}[
-        topsep=0.12 cm,
-        parsep=2pt,
-        partopsep=0pt,
-        itemsep=2pt,
-        leftmargin=10pt
-    ]
-}{
-    \end{itemize}
-}
-\newenvironment{onecolentry}{
-    \begin{adjustwidth}{0.00001 cm}{0.00001 cm}
-}{
-    \end{adjustwidth}
-}
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\large}{}{0pt}{}[\vspace{3pt}\titlerule]
+\titlespacing{\section}{-1pt}{0.35 cm}{0.28 cm}
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+\newenvironment{highlights}{\begin{itemize}[topsep=0.12 cm, parsep=2pt, partopsep=0pt, itemsep=2pt, leftmargin=10pt]}{\end{itemize}}
+\newenvironment{onecolentry}{\begin{adjustwidth}{0 cm}{0 cm}}{\end{adjustwidth}}
+\newenvironment{twocolentry}[2][]{\onecolentry\def\secondColumn{#2}\setcolumnwidth{\fill, 4.5 cm}\begin{paracol}{2}}{\switchcolumn \raggedleft \secondColumn \end{paracol}\endonecolentry}
+\newenvironment{header}{\setlength{\topsep}{0pt}\par\kern\topsep\centering\linespread{1.4}}{\par\kern\topsep}
 
 \begin{document}
-    % ===== Header =====
-    \begin{center}
-        {\fontsize{32 pt}{32 pt}\selectfont\bfseries\sffamily Nihal Veeramalla}\\[3 pt]
-        {\LARGE\bfseries\sffamily AI ENGINEER}\\[6 pt]
-        {\normalsize Fairfax, VA \,|\, \href{mailto:nihal.veeramalla@gmail.com}{nihal.veeramalla@gmail.com} \,|\, \href{tel:+1-313-288-2859}{+1 313-288-2859} \,|\, \href{https://www.linkedin.com/in/nihal-veeramalla/}{linkedin.com/in/nihal-veeramalla}}
-    \end{center}
-    \vspace{0.15cm}
+  \begin{header}
+    \fontsize{25 pt}{25 pt}\selectfont Candidate Name
+    \vspace{3 pt}
+    \Large Candidate Title
+    \vspace{5 pt}
 
-    % ===== Summary =====
-    \section{Summary}
-    \begin{onecolentry}
-        AI engineer with end to end experience shipping agentic copilots, dialog systems, and RAG services in production. Python with FastAPI, LangGraph and LangChain, Hugging Face, and private LLM inference (vLLM); behavior tree style flows with intent and entity extraction; {{FISERV_CLOUD}} stack ({{FISERV_CLOUD_K8S}}, Cognitive Services, {{FISERV_CLOUD_SEARCH}}) with infrastructure as code and CI/CD. Focus on measurable outcomes (latency, groundedness, win rate), strict governance (RBAC, redaction, audit trails), and reliable operations with deep observability.
-    \end{onecolentry}
+    \normalsize
+    City, State \, | \,
+    \href{mailto:candidate@example.com}{candidate@example.com} \, | \,
+    \href{tel:+1-000-000-0000}{+1 000-000-0000}
+  \end{header}
 
-    % ===== Experience =====
-    \section{Experience}
+  \vspace{4 pt}
 
-    % --- Fiserv: 12 bullets (Cloud-specific substitutions) ---
-    {\sffamily\bfseries\Large Data Scientist / AI, Fiserv} -- Berkeley Heights, NJ (Hybrid) \hfill {\sffamily\bfseries\Large Jan 2024 -- Present}
+  \section{Summary}
+  \begin{onecolentry}
+    Summary goes here.
+  \end{onecolentry}
+
+  \section{Experience}
+  \begin{twocolentry}{Dates}
+    \textbf{Role}, Company -- Location
+  \end{twocolentry}
+  \vspace{0.08 cm}
+  \begin{onecolentry}
     \begin{highlights}
-        \item Delivered an internal conversational copilot that reduced analyst preparation time from about 22 minutes to 12 to 13 minutes while keeping draft p95 at 4 to 6 seconds.
-        \item Orchestrated LangGraph agents for context building, retrieval, evidence planning, drafting, and validation with a supervised review step and immutable audit logs.
-        \item Standardized agent tool access with MCP (SQL, ticketing, OCR, search) using role scoped permissions, schema validated inputs, and telemetry; reduced invalid tool calls and sped up integrations by about 40\%.
-        \item Implemented RAG in Python and LangChain over {{FISERV_CLOUD_SEARCH}} with hybrid lexical and vector retrieval, metadata filters, and light re ranking; improved Recall@20 and nDCG@20 on golden questions.
-        \item Constructed a domain knowledge graph in {{FISERV_CLOUD}} Cosmos DB Gremlin linking policies, merchants, claims, and extracted entities; added graph aware RAG with neighbor expansion and relation filters to improve groundedness and cut irrelevant context tokens by about 18\%.
-        \item Served a private 8 to 13B model via vLLM on {{FISERV_CLOUD_K8S}} with GPU batching and prompt caching; enforced citation required outputs and policy checks to reduce hallucinations.
-        \item Added layout aware OCR and entity extraction using {{FISERV_OCR}} with a Tesseract fallback for tough scans and emails.
-        \item Built FastAPI endpoints for dialog, retrieval, and scoring; added asynchronous tool execution and idempotent request handling for reliability.
-        \item Engineered data processing and backfills on Databricks with PySpark and MLflow tracking; exposed online features via Redis and Feast for low latency scoring.
-        \item Deployed on {{FISERV_CLOUD_K8S}} in VNet subnets with private endpoints to internal services; packaged workers with Docker and configured autoscaling and health probes.
-        \item Established CI/CD with GitHub Actions and Terraform for infrastructure as code, blue or green releases, and scripted rollback procedures.
-        \item Instrumented OpenTelemetry and Datadog to track p95 and p99 latency, error rates, tool call success, and token cost; correlated LangSmith traces and added Ragas and TruLens dashboards for groundedness and edit distance.
+        \item Bullet point 1
+        \item Bullet point 2
     \end{highlights}
+  \end{onecolentry}
 
-    % --- Hyperleap AI: 8 bullets (AWS constant; start with segmentation) ---
-    {\sffamily\bfseries\Large Data Scientist, Hyperleap AI} \hfill {\sffamily\bfseries\Large Jun 2020 -- Aug 2022}
-    \begin{highlights}
-        \item Built an RFM based customer segmentation pipeline; exposed scores to CRM for VIP, at risk, and churn actions with measurable campaign lift.
-        \item Developed an OCR extraction service using Amazon Textract with a fine tuned transformer fallback on SageMaker to handle complex invoices and scanned PDFs.
-        \item Ingested sales, purchasing, and inventory data with AWS Glue and PySpark from S3 into Redshift for analytics and reporting.
-        \item Published REST services with FastAPI, containerized and deployed on Amazon EKS with versioned JSON contracts, idempotency, and retries.
-        \item Set up CI/CD with GitHub Actions for automated build, test, and blue or green deploys; embedded unit, contract, and data quality checks.
-        \item Added observability with CloudWatch for throughput, error rates, and p95 latency; configured drift checks and automated retraining via MLflow.
-        \item Applied security baselines with IAM least privilege, VPC endpoints, KMS encryption, and audit logging across services and data stores.
-        \item Delivered Power BI dashboards on Redshift covering extraction accuracy, segment performance, latency SLOs, and pipeline health for stakeholders.
-    \end{highlights}
+  \section{Education}
+  \begin{twocolentry}{Dates}
+    \textbf{Institution}, Degree
+  \end{twocolentry}
 
-    % --- Infinite Infolab: 5 bullets ---
-    {\sffamily\bfseries\Large Data Science Intern, Infinite Infolab} \hfill {\sffamily\bfseries\Large Jan 2019 -- Jun 2020}
-    \begin{highlights}
-        \item Productionized a real time people and object analytics pipeline from RTSP camera streams using YOLOv4 with OpenCV DNN, achieving more than 20 FPS on 1080p with p95 inference latency under 60 ms in lab tests.
-        \item Built a reproducible training and evaluation harness with curated labels, stratified splits, and metrics including precision, recall, mAP at 0.5 to 0.95, and IDF1 for tracker quality.
-        \item Implemented multi object tracking with centroid based association and motion smoothing to compute occupancy, dwell time, queue lengths, and trajectory heat maps across user defined ROIs.
-        \item Logged detections and event summaries to MongoDB and scheduled Python aggregation jobs to produce hourly and daily KPIs; added data quality checks for timestamp drift and duplicate IDs.
-        \item Shipped a Dockerized Flask dashboard for live counts and alerts, added health checks and log rotation, and documented setup, calibration workflow, and performance benchmarks in a runbook.
-    \end{highlights}
-
-    % ===== Education =====
-    \section{Education}
-    {\sffamily\bfseries George Mason University}, {\sffamily\bfseries Master of Science}, Data Analytics Engineering \hfill {\sffamily\bfseries Aug 2022 -- May 2024}\\[2pt]
-    {\sffamily\bfseries IIIT Bangalore}, {\sffamily\bfseries Postgraduate}, Data Science with Specialization in Deep Learning \hfill {\sffamily\bfseries Nov 2020 -- Dec 2021}\\[2pt]
-    {\sffamily\bfseries SRM University}, {\sffamily\bfseries Bachelor of Technology}, Computer Science and Engineering \hfill {\sffamily\bfseries Jun 2016 -- May 2020}
-
-    % ===== Publications =====
-    \section{Publications}
-    {\sffamily\bfseries International Journal of Advanced Science and Technology}, Detection and Prevention of DDoS Attack in SDN \hfill {\sffamily\bfseries 2020}
-
-    % ===== Skills =====
-    \section{Skills}
-    {\sffamily\bfseries Languages:} Python, SQL, Bash, JavaScript and Node.js \\
-    {\sffamily\bfseries LLMs and Agents:} LangGraph, LangChain, MCP tools, function and tool calling, behavior trees, critic and validator patterns \\
-    {\sffamily\bfseries Retrieval and Search:} {{FISERV_CLOUD_SEARCH_SHORT}} (BM25 plus vector), graph aware RAG with Cosmos Gremlin, FAISS or pgvector or Pinecone (evaluation), re ranking \\
-    {\sffamily\bfseries NLP and OCR:} Hugging Face Transformers, spaCy, NLTK; {{FISERV_OCR}}, Tesseract fallback \\
-    {\sffamily\bfseries Serving and APIs:} FastAPI, asynchronous I/O, schema validated JSON, idempotency, retries \\
-    {\sffamily\bfseries Data and Stores:} Databricks with PySpark, MLflow; Redis and Feast; {{FISERV_CLOUD}} Blob; PostgreSQL, Redshift, MongoDB \\
-    {\sffamily\bfseries MLOps and Infra:} Docker, Kubernetes ({{FISERV_CLOUD_K8S}} and EKS), Terraform, GitHub Actions CI/CD, blue or green and canary \\
-    {\sffamily\bfseries Observability and Eval:} OpenTelemetry, Datadog, LangSmith; Ragas and TruLens; latency p95 and p99, error rates, groundedness \\
-    {\sffamily\bfseries Security and Compliance:} Entra ID RBAC, Key Vault, tokenization and redaction, field level encryption, VNet or VPC isolation, immutable audit logs
+  \section{Skills}
+  \begin{onecolentry}
+      \textbf{Category:} Skill 1, Skill 2, Skill 3 \\
+  \end{onecolentry}
 
 \end{document}

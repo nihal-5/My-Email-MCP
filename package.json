@@ -10,8 +10,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "lint": "eslint src/**/*.ts",
-    "test": "jest",
-    "test:hybrid": "tsx test-hybrid-ai.ts"
+    "test": "jest"
   },
   "keywords": [
     "whatsapp",

@@ -4,6 +4,9 @@
  */
 
 import { logger } from '../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
+import type { CandidateProfile as FullCandidateProfile } from '../utils/candidate.js';
 
 export interface CandidateProfile {
   fullLegalName: string;
@@ -18,19 +21,21 @@ export interface CandidateProfile {
   linkedinUrl: string;
 }
 
-// Load from environment variables
+// Load from candidate profile file (preferred) or environment variables (no hard-coded defaults)
 export function getCandidateProfile(): CandidateProfile {
+  const fileProfile = loadProfileFromFile();
+
   return {
-    fullLegalName: process.env.CANDIDATE_FULL_NAME || 'Nihal Veeramalla',
-    currentLocation: process.env.CANDIDATE_LOCATION || 'Detroit, MI',
-    phone: process.env.CANDIDATE_PHONE || '+1 313-288-2859',
-    email: process.env.CANDIDATE_EMAIL || process.env.FROM_EMAIL || 'nihal.veeramalla@gmail.com',
-    visaStatus: process.env.CANDIDATE_VISA || 'F1 OPT EAD STEM approved',
-    interviewAvailability: process.env.CANDIDATE_INTERVIEW_AVAILABILITY || 'Anytime',
-    willingToRelocate: process.env.CANDIDATE_WILLING_RELOCATE || 'Yes',
-    preferredStartDate: process.env.CANDIDATE_START_DATE || 'ASAP',
-    overallExperience: process.env.CANDIDATE_EXPERIENCE || '5+ years',
-    linkedinUrl: process.env.CANDIDATE_LINKEDIN || process.env.LINKEDIN_URL || 'https://linkedin.com/in/nihalveeramalla'
+    fullLegalName: process.env.CANDIDATE_FULL_NAME || fileProfile?.fullLegalName || '',
+    currentLocation: process.env.CANDIDATE_LOCATION || fileProfile?.currentLocation || '',
+    phone: process.env.CANDIDATE_PHONE || fileProfile?.phone || process.env.FROM_PHONE || '',
+    email: process.env.CANDIDATE_EMAIL || fileProfile?.email || process.env.FROM_EMAIL || '',
+    visaStatus: process.env.CANDIDATE_VISA || fileProfile?.visaStatus || '',
+    interviewAvailability: process.env.CANDIDATE_INTERVIEW_AVAILABILITY || fileProfile?.interviewAvailability || '',
+    willingToRelocate: process.env.CANDIDATE_WILLING_RELOCATE || fileProfile?.willingToRelocate || '',
+    preferredStartDate: process.env.CANDIDATE_START_DATE || fileProfile?.preferredStartDate || '',
+    overallExperience: process.env.CANDIDATE_EXPERIENCE || fileProfile?.overallExperience || '',
+    linkedinUrl: process.env.CANDIDATE_LINKEDIN || process.env.LINKEDIN_URL || fileProfile?.linkedinUrl || ''
   };
 }
 
@@ -129,5 +134,18 @@ export function addApplicationAnswersToEmail(
   } else {
     // Append at end
     return emailBody + '\n\n' + applicationAnswers;
+  }
+}
+
+function loadProfileFromFile(): FullCandidateProfile['application'] | null {
+  const profilePath = process.env.CANDIDATE_PROFILE_PATH || path.join(process.cwd(), 'data', 'candidate.json');
+  try {
+    if (!fs.existsSync(profilePath)) return null;
+    const raw = fs.readFileSync(profilePath, 'utf-8');
+    const parsed = JSON.parse(raw) as FullCandidateProfile;
+    return parsed.application || null;
+  } catch (error) {
+    logger.warn(`Could not load candidate profile from ${profilePath}: ${(error as any).message}`);
+    return null;
   }
 }

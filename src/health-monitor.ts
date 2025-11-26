@@ -67,6 +67,17 @@ export class HealthMonitor {
 
   private async performHealthCheck(): Promise<void> {
     try {
+      // If WhatsApp client is not ready, treat as unhealthy but do not spam sendMessage errors
+      if (!(this.client as any).isClientReady || !(this.client as any).isClientReady()) {
+        this.consecutiveFailures++;
+        logger.warn(`⚠️ Health check skipped (client not ready) (${this.consecutiveFailures}/${FAILURE_THRESHOLD})`);
+        if (this.consecutiveFailures >= FAILURE_THRESHOLD && this.lastStatus === 'up') {
+          this.lastStatus = 'down';
+          logger.error('❌ System is DOWN (client not ready)!');
+        }
+        return;
+      }
+
       // Check if WhatsApp client is connected
       const isHealthy = await this.checkHealth();
 

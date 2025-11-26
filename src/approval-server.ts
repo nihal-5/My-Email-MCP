@@ -7,14 +7,13 @@ import http from 'http';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { logger } from './utils/logger.js';
-import { getConfig } from './utils/config.js';
-import { renderAndEmail, renderPDF, aiCustomizeApplication } from './resume-tools/index.js';
+import { getConfig, getAIConfig } from './utils/config.js';
+import { renderAndEmail, renderPDF, aiCustomizeApplication, resolveCloudPdf } from './resume-tools/index.js';
 import { WhatsAppClient } from './whatsapp-client.js';
 import { parseJD, parseJDWithAI } from './resume-tools/parsers/jd-parser.js';
-import { tailorResume } from './resume-tools/parsers/resume-tailor.js';
 import { validateResume } from './resume-tools/validators/resume-validator.js';
-import Groq from 'groq-sdk';
 import OpenAI from 'openai';
+import { deriveFilenameBase, loadCandidateProfile } from './utils/candidate.js';
 
 export interface PendingApproval {
   id: string;
@@ -1595,12 +1594,14 @@ Would you like to review before sending?\`;
 
       // Use edited content if provided, otherwise use original
       const emailTo = editedContent.editedTo || submission.parsedData.recruiterEmail;
-      const emailCC = editedContent.editedCC || process.env.CC_EMAIL;
+      const emailCC = editedContent.editedCC || process.env.CC_EMAIL || 'Srinu@blueridgeinfotech.com';
       const emailSubject = editedContent.editedSubject || submission.emailSubject;
       const emailBody = editedContent.editedBody || submission.emailBody;
 
       // Send email
       logger.info(`Sending approved resume to ${emailTo} (CC: ${emailCC || 'none'})`);
+
+      const profile = await loadCandidateProfile();
 
       const emailResult = await renderAndEmail({
         latex: submission.latex,
@@ -1608,7 +1609,8 @@ Would you like to review before sending?\`;
         cc: emailCC || undefined,
         subject: emailSubject,
         body: emailBody,
-        filenameBase: 'Nihal_Veeramalla_Resume'
+        filenameBase: deriveFilenameBase(profile),
+        cloud: submission.parsedData.cloud
       });
 
       if (!emailResult.success) {
@@ -1718,11 +1720,12 @@ Would you like to review before sending?\`;
 
       logger.info(`🔄 Regenerating email for submission ${submissionId} with comments: ${comments}`);
 
-      // Call OpenAI GPT-5 to regenerate email
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      // Call OpenAI to regenerate email
+      const aiConfig = getAIConfig();
+      const openai = new OpenAI({ apiKey: aiConfig.apiKey });
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-5',
+        model: aiConfig.emailGenerationModel,
         messages: [
           {
             role: 'system',
@@ -1749,7 +1752,6 @@ Please generate an improved email with updated subject and body based on these i
 {"subject": "the new subject line", "body": "the new email body"}`,
           },
         ],
-        temperature: 0.7,
         max_completion_tokens: 2000,
       });
 
@@ -1796,20 +1798,22 @@ Please generate an improved email with updated subject and body based on these i
       }
 
       const emailTo = submission.parsedData.recruiterEmail;
-      const emailCC = process.env.CC_EMAIL;
+      const emailCC = process.env.CC_EMAIL || 'Srinu@blueridgeinfotech.com';
       const emailSubject = submission.emailSubject;
       const emailBody = submission.emailBody;
 
       logger.info(`✅ ONE-CLICK SEND to ${emailTo}`);
 
       // Send email with auto-attached resume
+      const profile = await loadCandidateProfile();
       const emailResult = await renderAndEmail({
         latex: submission.latex,
         to: emailTo,
         cc: emailCC || undefined,
         subject: emailSubject,
         body: emailBody,
-        filenameBase: 'Nihal_Veeramalla_Resume'
+        filenameBase: deriveFilenameBase(profile),
+        cloud: submission.parsedData.cloud
       });
 
       if (!emailResult.success) {
@@ -1859,8 +1863,9 @@ Please generate an improved email with updated subject and body based on these i
       logger.info(`🤔 AI FIX & RESEND for submission ${id}`);
       logger.info(`User feedback: "${userFeedback || 'none provided - automatic analysis'}"`);
 
-      // Call GPT-5 to analyze and improve the email
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      // Call OpenAI to analyze and improve the email
+      const aiConfig = getAIConfig();
+      const openai = new OpenAI({ apiKey: aiConfig.apiKey });
 
       const analysisPrompt = userFeedback
         ? `The user said: "${userFeedback}". Fix this specific issue and improve the email.`
@@ -1873,7 +1878,7 @@ Please generate an improved email with updated subject and body based on these i
            - Missing key qualifications from JD`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-5',
+        model: aiConfig.emailGenerationModel,
         messages: [
           {
             role: 'system',
@@ -1909,7 +1914,6 @@ Return a JSON object with:
 Make it professional, enthusiastic, and tailored to the specific role and company.`,
           },
         ],
-        temperature: 0.7,
         max_completion_tokens: 2000,
       });
 
@@ -1982,62 +1986,50 @@ Make it professional, enthusiastic, and tailored to the specific role and compan
 
         // Parse JD with AI for better extraction
         const parsedData = await parseJDWithAI(jobDescription);
-        const latex = tailorResume({
-          cloud: parsedData.cloud,
-          role: parsedData.role,
-          location: parsedData.location
-        });
 
-        // Use AI to customize the email based on JD
-        logger.info('Generating AI-customized email...');
-        const aiResult = await aiCustomizeApplication(
-          latex,
-          jobDescription,
-          {
-            name: 'Nihal Veeramalla',
-            email: 'nihal.veeramalla@gmail.com',
-            phone: '313-288-2859',
-            title: 'Data Scientist'
-          }
-        );
+        const candidateProfile = await loadCandidateProfile();
+
+        // Use AI + profile to generate resume/email based on JD
+        logger.info('Generating AI-customized resume and email...');
+        const aiResult = await aiCustomizeApplication('', jobDescription, {
+          name: candidateProfile.name,
+          email: candidateProfile.email,
+          phone: candidateProfile.phone,
+          title: candidateProfile.title,
+          linkedin: candidateProfile.links?.linkedin
+        });
+        const latex = aiResult.customizedResume;
 
         // Update cloud platform with AI-detected platform (overrides regex detection)
         if (aiResult.analysis.cloudPlatform) {
-          const cloudMap: Record<string, 'azure' | 'aws' | 'gcp'> = {
+          const cloudMap: Record<string, 'azure' | 'aws' | 'gcp' | 'oracle' | 'ibm'> = {
             'Google Cloud Platform': 'gcp',
             'GCP': 'gcp',
             'Azure': 'azure',
-            'AWS': 'aws'
+            'AWS': 'aws',
+            'OCI': 'oracle',
+            'Oracle': 'oracle',
+            'Oracle Cloud': 'oracle',
+            'IBM': 'ibm',
+            'IBM Cloud': 'ibm'
           };
           const detectedCloud = cloudMap[aiResult.analysis.cloudPlatform];
           if (detectedCloud) {
-            parsedData.cloud = detectedCloud;
+            // coerce to existing type set; fallback to azure for oracle/ibm to avoid type mismatch
+            const mapped: 'azure' | 'aws' | 'gcp' = detectedCloud === 'oracle' || detectedCloud === 'ibm' ? 'azure' : detectedCloud;
+            parsedData.cloud = mapped;
             logger.info(`✅ Cloud platform updated to: ${parsedData.cloud} (AI-detected: ${aiResult.analysis.cloudPlatform})`);
           }
         }
 
         // Validate resume
-        const validation = validateResume(latex, parsedData.cloud);
-        if (!validation.ok) {
+        // Use cloud-specific PDF (no generation)
+        const cloudPdf = resolveCloudPdf(parsedData.cloud);
+        if (!cloudPdf) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
             success: false, 
-            error: 'Resume validation failed',
-            validationErrors: validation.errors 
-          }));
-          return;
-        }
-
-        // Generate PDF
-        const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
-        const filenameBase = `Nihal_Veeramalla_Resume_${timestamp}`;
-        const pdfResult = await renderPDF(latex, filenameBase);
-
-        if (!pdfResult.success) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ 
-            success: false, 
-            error: `PDF generation failed: ${pdfResult.error}` 
+            error: `No cloud-specific resume found for ${parsedData.cloud}` 
           }));
           return;
         }
@@ -2068,8 +2060,8 @@ Make it professional, enthusiastic, and tailored to the specific role and compan
             recruiterName: parsedData.recruiterName
           },
           latex,
-          pdfPath: pdfResult.pdfPath || '',
-          texPath: pdfResult.texPath || '',
+          pdfPath: cloudPdf,
+          texPath: '',
           emailSubject: aiResult.email.subject,
           emailBody: aiResult.email.body,
           validation: { ok: true, errors: [] },

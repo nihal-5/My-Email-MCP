@@ -6,7 +6,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 const execAsync = promisify(exec);
-export async function renderPDF(latex, filenameBase = 'Nihal_Veeramalla_Resume') {
+export async function renderPDF(latex, filenameBase = 'candidate_resume') {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const outboxDir = path.join(process.cwd(), 'outbox');
     const texFilename = `${filenameBase}_${timestamp}.tex`;
